@@ -1,0 +1,1 @@
+export { AuthController as AuthController } from './auth/auth.controller'
