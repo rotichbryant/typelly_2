@@ -1,11 +1,11 @@
 <template>
-    <CModal alignment="center" size="xl" :visible="modal" @close="modal = false">
+    <CModal alignment="center" size="xl" :visible="modal" @close="modal = false" keyboard backdrop="static">
       <CModalHeader>
         <CModalTitle>Edit App </CModalTitle>
       </CModalHeader>
       <CModalBody>
         <CCol md="12">
-            <CFormSwitch label="Test Mode" v-model="live" />
+            <CFormSwitch label="Live Mode" v-model="live" />
           </CCol>        
        <CRow>
           <CCol md="7" :class="live ? 'opacity-50' : ''">

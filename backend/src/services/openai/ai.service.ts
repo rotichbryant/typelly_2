@@ -30,21 +30,16 @@ export class OpenAIService{
           });
     }
 
-    async createCompletion(prompt, callback) {
-        const stream = await this.openai.chat.completions.create({
+    async createCompletion(prompt) {
+        return await this.openai.chat.completions.create({
             model: 'gpt-3.5-turbo',
             messages: [{ role: 'user', content: prompt }],
             stream: true,
-        });
+        });    
+    }
 
-        
-        return new Promise( async (resolve) => {
-            for await (const part of stream) {
-                if( !isEmpty(part.choices[0]?.delta) && !isEmpty(part.choices[0]?.delta.content) ){
-                    callback(part.choices[0]?.delta)
-                }
-            }              
-        })       
+    async models(){
+        return await this.openai.models.list();
     }
 
     async engines(){

@@ -159,7 +159,6 @@ router.beforeEach( (to, from, next) => {
   store.commit('loader',true);
   window.document.querySelector('title').innerHTML = `${to.meta.title} | ${import.meta.env.VITE_APP_NAME}`;
   window.scrollTo({top: 0, behavior: 'smooth'});
-  console.log(store.getters.authUser);
   switch( !isEmpty(store.getters.authUser) ){
     case true:
       if( routeName == "Login"){

@@ -47,32 +47,23 @@
                     :data="app"
                     @updateModal="updateModalView"
                 />
-                <PreviewApp 
-                    :show="modals.preview"
-                    :data="app"
-                    @updateModal="updateModalPreview"
-                />
             </CCardBody>
         </CCard>
     </CCol>
 </template>
 
 <script>
-import { CreateAppForm } from './forms';
 import CreateApp from './show/CreateApp.vue';
 import EditApp from './show/EditApp.vue';
-import PreviewApp from './show/PreviewApp.vue';
 import { computed, inject, reactive } from 'vue';
 import { cloneDeep, findIndex,isEmpty, merge } from 'lodash';
 import { useStore } from 'vuex';
 import { useToast } from "vue-toastification";
 import { useRoute, useRouter } from 'vue-router';
-import EditAppVue from './show/EditApp.vue';
 
 export default {
     components:{
         CreateApp,
-        PreviewApp,
         EditApp
     },
     data(){

@@ -1,19 +1,17 @@
 import { Module, MiddlewareConsumer, NestModule } from '@nestjs/common';
 import { ApiMiddleware, RedirectIfAuthMiddleware } from './middlewares';
-import { AppController } from './app.controller';
+import { AiAppController, AuthController, ChatbotController } from './controllers';
 import { AppService } from './app.service';
 import { JwtStrategy, LocalStrategy } from './guards';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { AuthController } from './controllers';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { CacheModule } from '@nestjs/cache-manager';
 import { ConfigDatabase } from './config';
 import { AuthService, OpenAIService } from './services';
-import { CompanyModule, MailModule, UserModule, RoleModule, AiAppModule, PromptModule } from './modules';
-import { AppEntity, CompanyEntity, PromptEntity, RoleEntity, UserEntity } from './entities';
-import { AiAppController } from './controllers/ai_app/ai.app.controller';
+import { ChatBotModule, CompanyModule, MailModule, UserModule, RoleModule, AiAppModule, PromptModule, MessageModule } from './modules';
+import { AppEntity, ChatBotEntity, CompanyEntity, MessageEntity, PromptEntity, RoleEntity, UserEntity } from './entities';
 
 @Module({
   imports: [
@@ -32,7 +30,9 @@ import { AiAppController } from './controllers/ai_app/ai.app.controller';
       password:    process.env.DB_PASSWORD,
       entities:    [
         AppEntity,
+        ChatBotEntity,
         CompanyEntity,
+        MessageEntity,
         PromptEntity,
         RoleEntity,
         UserEntity
@@ -45,13 +45,15 @@ import { AiAppController } from './controllers/ai_app/ai.app.controller';
       signOptions: { expiresIn: process.env.JWT_SESSION_EXPIRES },
     }),
     MailModule,   
+    ChatBotModule,
     CompanyModule,
+    MessageModule,
     AiAppModule,
     PromptModule,
     RoleModule,
     UserModule 
   ],
-  controllers: [AppController,AuthController,AiAppController],
+  controllers: [AuthController,AiAppController, ChatbotController],
   providers: [AppService,AuthService,OpenAIService,JwtStrategy,LocalStrategy],
 })
 

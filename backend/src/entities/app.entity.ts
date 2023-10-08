@@ -1,6 +1,7 @@
 import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn, OneToMany, JoinColumn, ManyToOne } from 'typeorm';
 import { PromptEntity } from './prompt.entity';
 import { UserEntity } from './user.entity';
+import { ChatBotEntity } from './chatbot.entity';
 
 @Entity("apps")
 export class AppEntity {
@@ -30,6 +31,9 @@ export class AppEntity {
   
   @OneToMany(() => PromptEntity, (prompt) => prompt.app, { eager: true, cascade: true})
   prompts: PromptEntity[];
+
+  @OneToMany(() => ChatBotEntity, (chatbot) => chatbot.app, { eager: true, cascade: true})
+  chatbots: ChatBotEntity[];
 
   @ManyToOne(() => UserEntity, (user) => user.apps,{ eager: false })
   @JoinColumn({

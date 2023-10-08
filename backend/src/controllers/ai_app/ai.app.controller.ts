@@ -7,7 +7,7 @@ import { ConfigService } from '@nestjs/config';
 import { cloneDeep,get, isEmpty, isNull, set } from 'lodash';
 import { Paginate, PaginateQuery } from 'pagination-typeorm-nestjs';
 import { OpenAIService } from 'src/services';
-import { interval, map, Observable } from 'rxjs';
+import { from, interval, map, Observable } from 'rxjs';
 
 @Controller('ai/app')
 export class AiAppController {
@@ -32,7 +32,8 @@ export class AiAppController {
             query.search = id;
 
             const apps   = await this.aiAppModel.get(query);
-            res.status(HttpStatus.OK).json({apps});
+            const models = await this.openaiService.models();
+            res.status(HttpStatus.OK).json({apps,models});
             
         } catch (e) {
             res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({});
@@ -105,23 +106,9 @@ export class AiAppController {
 
     // @UseGuards(AuthGuard)
     @Sse('chatbot')
-    chatbot(@Res() res: Response): Observable<any>{
-        return new Observable( () => {
-             this.openaiService
-                 .createCompletion(
-                    "Who was the latest president of USA?", 
-                    (c) => res.status(HttpStatus.OK).json(c)
-                 )
-        });
-        // return interval(1000).pipe(map((_) => ));
-        // for await (const part of this.openaiService.getCompletion()) {
-        //     return 
-        //     process.stdout.write(part.choices[0]?.delta?.content || '');
-        // }     
-        // return interval(5).pipe(map((_) => this.openaiService.getCompletion() ));
-        // return this.openaiService.getCompletion();
-        // const models = await this.openaiService.chatModels();
-        // res.status(HttpStatus.OK).json({models});
+    async chatbot(@Res() res: Response): Promise<Observable<any>>{
+        const stream   = await this.openaiService.createCompletion("Test");
+        return from(stream).pipe(map((i) => ({ data: i })));
     } 
 
     @UseGuards(AuthGuard)

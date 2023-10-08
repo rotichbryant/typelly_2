@@ -8,19 +8,19 @@ import {
   import { JwtService } from '@nestjs/jwt';
   import { Request } from 'express';
   import { DataSource } from 'typeorm';
-  import { UserEntity } from '../entities';
+  import { AppEntity } from '../entities';
   import { set } from 'lodash';
   
   @Injectable()
   export class ChatBotGuard implements CanActivate {
   
-    private readonly userEntity;
+    private readonly appEntity;
     
     constructor(
       private jwtService: JwtService,
       @Inject(DataSource) private readonly dataSource: DataSource    
     ) {
-      this.userEntity = this.dataSource.getRepository(UserEntity);
+      this.appEntity = this.dataSource.getRepository(AppEntity);
     }
   
     async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -30,10 +30,10 @@ import {
         throw new UnauthorizedException();
       }
       try {
-        const { user: { email } } = await this.jwtService.verifyAsync(token,{secret: process.env.JWT_SESSION_KEY});
+        const { chatbot_app: { hash_key } } = await this.jwtService.verifyAsync(token,{secret: process.env.JWT_SESSION_KEY});
         // 💡 We're assigning the payload to the request object here
         // so that we can access it in our route handlers
-        set(request,'user', await this.userEntity.findOneBy({email}));
+        set(request,'chabot_app', await this.appEntity.findOneBy({hash_key}));
         // request.user =;
       } catch(err) {
         throw new UnauthorizedException();

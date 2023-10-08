@@ -4,7 +4,7 @@ import { AppEntity } from '../entities';
 import { AppRepository } from '../repositories';
 import { DeleteResult, UpdateResult } from 'typeorm';
 import { first } from 'lodash';
-import { FilterOperator, Paginate, PaginateQuery, paginate, Paginated } from 'pagination-typeorm-nestjs'
+import { PaginateQuery, paginate, Paginated } from 'pagination-typeorm-nestjs'
 
 @Injectable()
 export class AppModel {

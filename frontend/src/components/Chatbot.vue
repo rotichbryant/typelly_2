@@ -10,15 +10,15 @@
             </CBadge>      
             <CBadge color="success" position="top-center" shape="rounded-pill" v-show="!liveMode">
                 Testing
-            </CBadge>              
+            </CBadge>        
         </CHeader>
         <CCardBody>
             <CContainer fluid class="h-100">
-                <CRow class="h-100">
+                <CRow class="h-100" v-if="!loading.chatbot">
                     <CCol md="12" xs="12" class="direct-chat-messages p-0" v-show="!liveMode">
                         <div class="direct-chat-msg">
                             <!-- /.direct-chat-info -->
-                            <CAvatar color="secondary" class="direct-chat-img" text-color="white">
+                            <CAvatar color="primary" class="direct-chat-img" text-color="white">
                                 <CIcon name="cib-probot" size="lg"/>
                             </CAvatar> 
                             <!-- <img class="direct-chat-img" src="https://bootdey.com/img/Content/user_1.jpg" alt="Message User Image">/.direct-chat-img -->
@@ -49,13 +49,18 @@
                         <template v-for="(message,key) in messages" :key="`${key}_${message.type}`" >
                             <div class="direct-chat-msg" v-show="message.type == 'answer'">
                                 <!-- /.direct-chat-info -->
-                                <CAvatar color="secondary" class="direct-chat-img" text-color="white">
+                                <CAvatar color="primary" class="direct-chat-img" text-color="white">
                                     <CIcon name="cib-probot" size="lg"/>
                                 </CAvatar> 
                                 <!-- <img class="direct-chat-img" src="https://bootdey.coms/img/Content/user_1.jpg" alt="Message User Image">/.direct-chat-img -->
                                 <div class="direct-chat-text">
-                                    {{ message.content }}<br>
-                                    <span class="direct-chat-timestamp pull-left text-sm">{{ message.date }}</span>
+                                    <template v-if="message.loading">
+                                        <div class="p-2"><div class="typing-loader"></div></div>
+                                    </template>
+                                    <template v-else>
+                                        <div v-html="message.content"></div> <br>
+                                        <span class="direct-chat-timestamp pull-left">{{ message.create_at  }}</span>
+                                    </template>
                                 </div>
                                 <!-- /.direct-chat-text -->
                             </div>
@@ -69,12 +74,13 @@
                                 </CAvatar>                
                                 <div class="direct-chat-text">
                                     {{ message.content }} <br>
-                                    <span class="direct-chat-timestamp pull-left">{{ message.date }}</span>
+                                    <span class="direct-chat-timestamp pull-left">{{ message.create_at  }}</span>
                                 </div>
                                 <!-- /.direct-chat-text -->
                             </div>
                             <!-- /.direct-chat-msg -->  
-                        </template>                                          
+                        </template> 
+                                           
                     </CCol>
                     <CCol md="12" xs="12" class="d-flex flex-row flex-wrap mt-5 px-0 align-items-end">
                         <template v-for="(prompt,key) in chatbot.prompts" :key="`${prompt.description}_${key}`" >
@@ -83,13 +89,21 @@
                         </template>
                     </CCol>
                 </CRow>
+                <CRow class="d-flex h-100" v-else="loading.chatbot">
+                    <CCol class="text-center">
+                        <CSpinner component="span" size="lg" aria-hidden="true"/>                    
+                    </CCol>
+                </CRow>
             </CContainer>
         </CCardBody>
         <CFooter class="bg-white" style="">
             <CForm class="col-12" @submit.prevent="submit" v-if="liveMode">
                 <CInputGroup class="my-2">
                     <CFormInput v-model="question" :placeholder="chatbot.input_placeholder || 'Placeholder text'" />
-                    <CButton type="submit" color="primary" variant="outline" id="button-addon2">Send</CButton>
+                    <CButton type="submit" :disabled="loading.question" color="primary" variant="outline" id="button-addon2">
+                        <CSpinner v-show="loading.question" component="span" size="sm" aria-hidden="true"/>                    
+                        Send
+                    </CButton>
                 </CInputGroup>
             </CForm>
             <CInputGroup class="my-2" v-else>
@@ -100,17 +114,34 @@
     </CCard>    
 </template>
 <script lang="ts" >
-    import { useEventSource } from '@vueuse/core'
+    import { EventSourcePolyfill } from 'event-source-polyfill'
     import moment from 'moment';
+    import { cloneDeep } from 'lodash';
     export default {
-        beforeCreate(){
+        beforeCreate(){ 
+
             this.initializeLiveMode = () => {
-                // this.loading = true;
-                this.messages.push({type: 'answer', content: this.chatbot.welcome_message, date: moment().format('D MMM YY h:mm a')  });                
+                const { chatbot: { id, welcome_message} } = this;
+                this.loading.chatbot = true;
+                this.$api
+                    .post(`chatbot/${id}/create`,{content: welcome_message, type: 'answer'})
+                    .then( ({ data: { chatbot, message} }) => {
+                        message.create_at = moment(message.create_at).format('D MMM YY h:mm a');
+                        this.botInfo      = cloneDeep(chatbot);
+                        this.question     = String();
+                        this.messages.push(message);    
+                    })
+                    .catch( () => {
+                    })
+                    .finally( () => {
+                        this.loading.chatbot = false;
+                    });                            
             }
+
             this.initializeTestMode = () => {
                 this.question = String();
                 this.messages = Array();
+                this.loading  = Boolean();
             }
         },        
         computed:{
@@ -120,10 +151,19 @@
             mode_badge(): String{
                 return this.live ? "Live" : "Testing";
             }
-        },  
+        }, 
+        create(){
+            this.$set(this,"moment",moment);
+        },
         data(){
             return {
-                loading: Boolean(),
+                botInfo:  Object(),
+                loading:  {
+                    chatbot: Boolean(),
+                    response: Boolean(),
+                    question: Boolean()
+                },
+                token:    String(),
                 messages: Array(),
                 question: String()
             }
@@ -133,7 +173,73 @@
                 this.question = description;
             },
             submit(){
-                this.messages.push({ type: 'question', content: this.question, date: moment().format('D MMM YY h:mm a')  });
+                const { botInfo:{ id }, question } = this;
+                this.$api
+                    .post(`chatbot/${id}/update`,{content: question, type: 'question'})
+                    .then( ({ data: { message} }) => {
+                        message.create_at = moment(message.create_at).format('D MMM YY h:mm a');
+                        this.messages.push(message);    
+                        this.loading.question = true
+                        this.getResponse(message.id);
+                    })
+                    .catch( () => {
+                    })
+                    .finally( () => {
+                        // this.loading.question = false
+
+                    });                  
+            },
+            getResponse(id){
+                this.messages.push({ loading: true, type:'answer', content: ''});
+
+                const { 
+                    $store:{ 
+                        getters: { 
+                            authToken: { token_type, token }, 
+                            env:       { VITE_API_BASE_URL } 
+                        } 
+                    } 
+                } = this;
+
+                let es = new EventSourcePolyfill(`${VITE_API_BASE_URL}/chatbot/${id}/response`,{
+                    headers: {
+                        'Authorization': `${token_type} ${token}`, // or localStorage.getItem("myToken"),
+                        'Allow-Origin': '*'
+                    }
+                });
+
+                es.addEventListener("message", ({data}) => {
+                    const { delta:{ content }, finish_reason } = JSON.parse(data);
+
+                    if( finish_reason == "stop"){
+                        this.loading.question = false;
+                        this.question         = String();
+                        this.registerResponse();
+                        es.close();
+                    } 
+
+                    if( finish_reason == null ){
+                        if( this.messages[(this.messages.length - 1)].loading ){
+                            this.messages[(this.messages.length - 1)].loading = false;
+                        }
+                        this.messages[(this.messages.length - 1)].content += content;
+                    }
+                }); 
+            },
+            registerResponse(){
+                const { botInfo:{ id } } = this;
+                const content            = this.messages[(this.messages.length - 1)]
+                this.$api
+                    .post(`chatbot/${id}/update`,content)
+                    .then( ({ data: { message } }) => {
+                        this.messages[(this.messages.length - 1)].create_at = moment(message.create_at).format('D MMM YY h:mm a');
+                    })
+                    .catch( () => {
+                    })
+                    .finally( () => {
+                        // this.loading.question = false
+
+                    }); 
             }
         },
         props:{

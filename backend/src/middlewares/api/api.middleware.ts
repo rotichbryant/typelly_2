@@ -8,7 +8,9 @@ export default class ApiMiddleware implements NestMiddleware {
     if( 
         keys(headers).includes('X-Requested-With') || 
         keys(headers).includes('x-requested-with') || 
-        ( keys(headers).includes('content-type') && (headers['content-type'].includes('application/json') || headers['content-type'].includes('text/event-stream')) )
+        ( keys(headers).includes('content-type') && (headers['content-type'].includes('application/json') || headers['content-type'].includes('text/event-stream')) ) ||
+        headers['accept'].includes('text/event-stream')
+
      ){ 
       next()
     } else { 

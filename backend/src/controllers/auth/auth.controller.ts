@@ -1,9 +1,9 @@
-import { Body, Controller, Get, HttpStatus, Post, Put, Req, Res, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, HttpStatus, Ip, Post, Put, Req, Res, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '../../guards';
 import { Request, Response } from 'express';
 import { AuthService, MailService } from 'src/services';
 import { RegisterValidation } from 'src/validation';
-import { CompanyModel, RoleModel, UserModel } from 'src/models';
+import { AppModel, CompanyModel, RoleModel, UserModel } from 'src/models';
 import * as bcrypt from 'bcrypt';
 import { ConfigService } from '@nestjs/config';
 import { isEmpty, isNull } from 'lodash';
@@ -12,6 +12,7 @@ import { isEmpty, isNull } from 'lodash';
 export class AuthController {
 
     constructor(
+        private appModel: AppModel,
         private authService: AuthService,
         private companyModel: CompanyModel,
         private configService: ConfigService,

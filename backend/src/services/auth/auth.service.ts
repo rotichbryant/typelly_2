@@ -23,4 +23,5 @@ export class AuthService {
             token:      this.jwtService.sign(user)
         };
     }
+
 }
