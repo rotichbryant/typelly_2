@@ -15,7 +15,7 @@ export class MessageEntity {
   @PrimaryGeneratedColumn("uuid")
   id: string;
 
-  @ManyToOne(() => ChatBotEntity, (chatbot) => chatbot.messages,{ eager: false, lazy: true })
+  @ManyToOne(() => ChatBotEntity, (chatbot) => chatbot.messages,{ eager: false, lazy: true,  onDelete: 'CASCADE', onUpdate: 'CASCADE' } )
   @JoinColumn({
     name:                 "chatbot_id",
     referencedColumnName: "id",

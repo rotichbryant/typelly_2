@@ -6,7 +6,7 @@ export class UserEntity {
   @PrimaryGeneratedColumn("uuid")
   id: string;
 
-  @OneToMany(() => AppEntity, (app) => app.user, { eager: true })
+  @OneToMany(() => AppEntity, (app) => app.user, { eager: false, lazy: true })
   apps: AppEntity[];
 
   @ManyToOne(() => CompanyEntity, (company) => company.users)

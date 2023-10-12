@@ -14,7 +14,7 @@ export class ChatBotEntity {
   @OneToMany(() => MessageEntity, (message) => message.chatbot, { eager: true, cascade: true})
   messages: MessageEntity[];
 
-  @ManyToOne(() => AppEntity, (app) => app.chatbots,{ eager: false })
+  @ManyToOne(() => AppEntity, (app) => app.chatbots,{ eager: false,  onDelete: 'CASCADE', onUpdate: 'CASCADE'})
   @JoinColumn({
     name:                 "app_id",
     referencedColumnName: "id",

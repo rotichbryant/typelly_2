@@ -3,11 +3,28 @@ import { PromptEntity } from './prompt.entity';
 import { UserEntity } from './user.entity';
 import { ChatBotEntity } from './chatbot.entity';
 
+
+export enum ContentType {
+  DOCUMENTS = 'documents',
+  SITEMAP   = 'sitemap',
+  WEBSITE   = 'website'
+}
+
 @Entity("apps")
 export class AppEntity {
     
   @PrimaryGeneratedColumn("uuid")
   id: string;
+
+  @Column()
+  api_key: string;
+
+  @Column({
+    enum: ContentType,
+    nullable: true,
+    type: 'enum',
+  })
+  content_type: string;
 
   @Column()
   name: string;
@@ -28,6 +45,11 @@ export class AppEntity {
     default: 0
   })
   publish: boolean;
+
+  @Column({
+    nullable: true
+  })
+  website: string
   
   @OneToMany(() => PromptEntity, (prompt) => prompt.app, { eager: true, cascade: true})
   prompts: PromptEntity[];
@@ -35,7 +57,7 @@ export class AppEntity {
   @OneToMany(() => ChatBotEntity, (chatbot) => chatbot.app, { eager: true, cascade: true})
   chatbots: ChatBotEntity[];
 
-  @ManyToOne(() => UserEntity, (user) => user.apps,{ eager: false })
+  @ManyToOne(() => UserEntity, (user) => user.apps,{ eager: false,  onDelete: 'CASCADE', onUpdate: 'CASCADE'})
   @JoinColumn({
     name:                 "user_id",
     referencedColumnName: "id",

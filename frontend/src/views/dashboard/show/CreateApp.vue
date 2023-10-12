@@ -1,5 +1,5 @@
 <template>
-    <CModal alignment="center" size="xl" :visible="modal" @close="modal = false">
+    <CModal alignment="center" size="xl" :visible="modal" @close="modal = false"  keyboard backdrop="static">
       <CModalHeader>
         <CModalTitle>Create App</CModalTitle>
       </CModalHeader>
@@ -38,6 +38,58 @@
                       </CAccordionBody>
                   </CAccordionItem>
                   <CAccordionItem :item-key="2">
+                    <CAccordionHeader>Configurations</CAccordionHeader>
+                    <CAccordionBody>
+                        <CRow>
+                            <CCol class="col-md-12">   
+                                <CCol class="py-2">
+                                    <CFormLabel for="api_key" class="my-0">API Key</CFormLabel>
+                                    <CFormInput id="api_key" placeholder="eg. sk-*****************" v-model="form.api_key"/>
+                                    <CFormText component="span" id="welcome_message">
+                                        <p class="text-danger mb-0" v-show="$has(errors,'api_key')">{{errors.api_key}}</p>								
+                                        <p class="mb-0" v-show="!$has(errors,'api_key')">Add you openai api key.</p>	                    
+                                    </CFormText>
+                                </CCol>                                                              
+                            </CCol>
+                            <CCol class="col-md-12">
+                                <CCol class="py-2">
+                                    <CFormLabel for="hash_key" class="my-0">Hash Key</CFormLabel>
+                                    <CFormInput id="hash_key" placeholder="eg. HYdoe779jhytsmGTG" v-model="form.hash_key" disabled/>
+                                    <CFormText component="span" id="hash_key">
+                                        <p class="text-danger mb-0" v-show="$has(errors,'hash_key')">{{errors.hash_key}}</p>								
+                                        <p class="mb-0" v-show="!$has(errors,'hash_key')">Automatically generated when you add the api key</p>	                    
+                                    </CFormText>
+                                </CCol>
+                            </CCol>
+                        </CRow>                     
+                    </CAccordionBody>                    
+                  </CAccordionItem>                  
+                  <CAccordionItem :item-key="3">
+                    <CAccordionHeader>Content</CAccordionHeader>
+                    <CAccordionBody>
+                        <CRow>
+                            <CCol class="col-12 text-center p-2">
+                                <p class="text-danger mb-0" v-show="$has(errors,'content_type')">{{errors.content_type}}</p>								
+                                <p class="mb-0" v-show="!$has(errors,'content_type')">Select the content source type to be added.</p>	                                  
+                            </CCol>
+                            <CCol class="d-flex justify-content-center col-md-12">
+                                <CButtonGroup role="group" aria-label="Basic checkbox toggle button group">
+                                    <CFormCheck v-model="form.content_type" type="radio" :button="{color: 'primary', variant: 'outline'}" name="btnradio" id="btnradio1" autocomplete="off" label="Website"   value="website"/>
+                                    <CFormCheck v-model="form.content_type" type="radio" :button="{color: 'primary', variant: 'outline'}" name="btnradio" id="btnradio2" autocomplete="off" label="Sitemap"   value="sitemap"/>
+                                    <CFormCheck v-model="form.content_type" type="radio" :button="{color: 'primary', variant: 'outline'}" name="btnradio" id="btnradio3" autocomplete="off" label="Documents" value="document"/>
+                                </CButtonGroup>                                   
+                            </CCol>
+                            <CCol class="col-md-12">
+                                <template v-if="$isEmpty(form.content)">
+                                    <CCallout color="danger">
+                                        <h6>Select the content type first.</h6>
+                                    </CCallout>   
+                                </template>
+                            </CCol>
+                        </CRow>                     
+                    </CAccordionBody>                    
+                  </CAccordionItem>
+                  <CAccordionItem :item-key="4">
                       <CAccordionHeader>Quick prompts</CAccordionHeader>
                       <CAccordionBody>
                           <template v-for="(prompt,key) in form.prompts" :key="`propmpt_${key}`">
@@ -110,6 +162,7 @@
   import Chatbot from '@/components/Chatbot.vue';
   import { cloneDeep, each, has, isEmpty } from 'lodash';
   import * as yup from 'yup';
+  import { UniqueCharOTP } from 'unique-string-generator';
   export default {
     components:{
         Chatbot
@@ -133,11 +186,11 @@
         }
     },
     created(){
-        this.$has     = has;
-        this.$isEmpty = isEmpty;
+        this.$has          = has;
+        this.$isEmpty      = isEmpty;
 
         this.validateForm = (field) => {
-            this.formSchema.validateAt(field, this.data)
+            this.formSchema.validateAt(field, this.form)
                 .then((value,key) => {
                     delete this.errors[field];
                 })
@@ -162,10 +215,33 @@
                                 .required("*Description message is required"),                        
         });
         this.formSchema = yup.object().shape({
-            name:              yup.string()						
-                                .required("*Name is required"),
-            welcome_message:   yup.string()
+            api_key:         yup.string()						
+                                .required("*Api Key is required"),                               
+            hash_key:        yup.string()						
+                                .required("*Hash Key is required"),
+            content_type:   yup.string()						
+                                .required("*Content type is required"),                                
+            files:           yup.array()
+                                .when("content_type", {
+                                    is: "documents",
+                                    then: yup.array()
+                                             .min(1, '* The application requires at least one file content')
+                                             .required("*Prompts is required"),              
+                                }),        
+            sitemap:         yup.array()
+                                .when("content_type", {
+                                    is: "sitemap",
+                                    then: yup.array()
+                                             .min(1, '* The application requires at least one sitemap content')
+                                             .required("*Prompts is required"),              
+                                }),                                                          
+            welcome_message: yup.string()
                                 .required("*Welcome message is required"),
+            website:         yup.string()
+                                .when("content_type", {
+                                    is: "welcome",
+                                    then: yup.string().required("*Website link is required")
+                                }),                                
             input_placeholder: yup.string()
                                 .required("*Input placeholder is required"),  
             prompts:           yup.array()
@@ -239,6 +315,13 @@
                 this.disabled.createBtn = !(await this.formSchema.isValid(this.form));
             },
             deep: true,
+        },
+        "data.api_key"(value){
+            if( !isEmpty(value) ){
+                this.form.hash_key = UniqueCharOTP(50);
+            } else {
+                this.form.hash_key = String();
+            }
         },
         async show(value){
             if( value ){

@@ -14,12 +14,10 @@
 	  <CSidebarBrand>
 		<CIcon
 		  custom-class-name="sidebar-brand-full"
-
 		  :height="35"
 		/>
 		<CIcon
 		  custom-class-name="sidebar-brand-narrow"
-
 		  :height="35"
 		/>
 	  </CSidebarBrand>

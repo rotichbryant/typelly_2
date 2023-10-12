@@ -2,7 +2,7 @@ import { HttpException, Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';;
 import { UserModel } from 'src/models';
 import { ConfigService } from '@nestjs/config';
-
+import { omit } from 'lodash';
 @Injectable()
 export class AuthService {
 
@@ -20,7 +20,7 @@ export class AuthService {
         
         return {
             token_type: `Bearer`,
-            token:      this.jwtService.sign(user)
+            token:      this.jwtService.sign(omit(user,['password']))
         };
     }
 

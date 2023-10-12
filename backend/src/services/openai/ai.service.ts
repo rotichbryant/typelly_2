@@ -3,6 +3,7 @@ import { ConfigService } from "@nestjs/config";
 import { subscribe } from "diagnostics_channel";
 import Configuration from 'openai';
 import OpenAIapi from 'openai';
+import { OpenAI } from "langchain/llms/openai";
 import { isEmpty } from 'lodash';
 
 @Injectable()

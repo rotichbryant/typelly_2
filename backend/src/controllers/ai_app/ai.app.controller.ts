@@ -36,6 +36,7 @@ export class AiAppController {
             res.status(HttpStatus.OK).json({apps,models});
             
         } catch (e) {
+            console.log(e);
             res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({});
         }
     }

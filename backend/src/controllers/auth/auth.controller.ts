@@ -6,7 +6,7 @@ import { RegisterValidation } from 'src/validation';
 import { AppModel, CompanyModel, RoleModel, UserModel } from 'src/models';
 import * as bcrypt from 'bcrypt';
 import { ConfigService } from '@nestjs/config';
-import { isEmpty, isNull } from 'lodash';
+import { get, isEmpty, isNull, omit } from 'lodash';
 
 @Controller('auth')
 export class AuthController {
@@ -31,7 +31,7 @@ export class AuthController {
                 const isMatch = await bcrypt.compare(password,user.password);
                 if( isMatch ){
                     const token = await this.authService.signIn({user,password});
-                    return res.status(HttpStatus.OK).json({user,token});;
+                    return res.status(HttpStatus.OK).json({user: omit(user,['password']),token});;
                 } else {
                     return res.status(HttpStatus.UNAUTHORIZED).json({});
                 }
@@ -69,7 +69,8 @@ export class AuthController {
     @UseGuards(AuthGuard)
     @Get('user')
     getProfile(@Req() req: Request,  @Res() res: Response) {
-        res.status(HttpStatus.OK).json(req['user']);
+        const user = get(req,'user');
+        res.status(HttpStatus.OK).json({user});
     } 
 
     @Post('ai')

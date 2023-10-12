@@ -117,7 +117,17 @@ const router = createRouter({
             state: 2
           },
           component: () => import('@/views/dashboard/Company.vue')
-        },        
+        },     
+        {
+          path: 'forbidden',
+          name: "Forbidden",
+          meta: {
+            title:    'Forbidden',
+            protected: false,
+            state:     0
+          },
+          component: () => import('@/views/dashboard/Forbidden.vue')
+        },           
         {
           path: 'profile',
           name: "Profile",

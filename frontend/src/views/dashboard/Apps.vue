@@ -1,9 +1,9 @@
 <template>
-    <CCol class="p-5" md="12" xs="12">
-        <CCard class="h-100 p-3">
+    <CCol class="p-3" md="12" xs="12">
+        <CCard class="p-2">
             <CCardBody>
                 <CContainer fluid class="p-3">
-                    <CRow class="pb-4">
+                    <CRow class="mb-3">
                         <CCol>
                             <h3>List of AI Apps</h3>
                             <p>Create a chatbot and it up in your own website.</p>
@@ -13,13 +13,18 @@
                         </CCol>
                     </CRow>
                     <CRow>
-                        <template v-for="(app,key) in apps.data" :key="`app_${key}`">
-                            <CCol md="3" xs="12" >
+                        <template v-if="!$isEmpty(apps)">
+                            <CCol md="3" xs="12" v-for="(app,key) in apps.data" :key="`app_${key}`">
                                 <CCard>
+                                    <CHeader class="justify-content-center">
+                                        <CCardTitle class="m-0">{{ app.name }}</CCardTitle>
+                                    </CHeader>
                                     <CCardBody>
-                                        <CCardTitle>{{ app.name }}</CCardTitle>
-                                        <CCardSubtitle class="mb-2 text-muted">Card subtitle</CCardSubtitle>
-                                        <CCardText>{{ app.welcome_message }}</CCardText>
+                                        <CCardSubtitle class="mb-2 text-muted">Bot Instances: 3</CCardSubtitle>
+                                        <CCardSubtitle class="mb-2 text-muted">Content Sources: 6 </CCardSubtitle>
+                                        <CCardSubtitle class="mb-2 text-muted">Interactions: 50</CCardSubtitle>
+                                    </CCardBody>
+                                    <CFooter>
                                         <CCol class="d-flex justify-content-between">
                                             <CButton color="secondary" variant="outline" class="text-primary" @click="viewApp(app.id)">
                                                 <CSpinner v-show="loading.view" component="span" size="sm" aria-hidden="true"/>
@@ -29,10 +34,30 @@
                                                 <CIcon name="cil-trash"/>
                                             </CButton>
                                         </CCol>
-                                    </CCardBody>
+                                    </CFooter>
                                 </CCard>                    
                             </CCol>
+                            <CCol md="12" xs="12" class="d-flex justify-content-center my-4">
+                                <CButtonToolbar class="mb-3" role="group" aria-label="Toolbar with button groups">
+                                    <CButtonGroup class="me-2" role="group" aria-label="First group">
+                                        <CButton color="secondary" variant="outline">1</CButton>
+                                        <CButton color="secondary" variant="outline">2</CButton>
+                                        <CButton color="secondary" variant="outline">3</CButton>
+                                        <CButton color="secondary" variant="outline">4</CButton>
+                                    </CButtonGroup>
+                                </CButtonToolbar>                                
+                            </CCol>
                         </template>
+                        <template v-else>
+                            <CCol>
+                                <CCard>
+                                    <CCardBody class="p-5 d-flex align-items-center justify-content-center">
+                                        <template v-if="loading.fetch"><h6><CSpinner size="sm"/></h6></template>
+                                        <template v-else><h6><CIcon name="cil-bell"/> Nothing found here.</h6></template>
+                                    </CCardBody>
+                                </CCard>
+                            </CCol>
+                        </template>                
                     </CRow>
                 </CContainer>
                 <CreateApp 
@@ -55,29 +80,40 @@
 <script>
 import CreateApp from './show/CreateApp.vue';
 import EditApp from './show/EditApp.vue';
-import { computed, inject, reactive } from 'vue';
 import { cloneDeep, findIndex,isEmpty, merge } from 'lodash';
-import { useStore } from 'vuex';
-import { useToast } from "vue-toastification";
-import { useRoute, useRouter } from 'vue-router';
 
 export default {
+    beforeRouteEnter(to, from, next) {
+        next((vm) => {
+            vm.fetch(), next();
+        });
+    },    
     components:{
         CreateApp,
         EditApp
+    },
+    created(){
+        this.$isEmpty = isEmpty;
     },
     data(){
         return {
             apps: Object(),
             app:  Object(),
             form:{
+                api_key:           String(),
+                content_type:      String(),
+                hash_key:          String(),
+                files:             Array(),
                 name:              String(),
                 welcome_message:   String(),
                 input_placeholder: String(),     
-                prompts:           Array()           
+                prompts:           Array(),
+                sitemap:           Array(),   
+                website:           String()
             },
             loading:{
                 add: Boolean(),
+                fetch: Boolean(),
                 view: Boolean()
             },
             modals:{
@@ -86,13 +122,9 @@ export default {
             }
         }
     },
-    beforeRouteEnter(to, from, next) {
-        next((vm) => {
-            vm.fetch(), next();
-        });
-    },
     methods:{
         fetch(){
+            this.loading.fetch = true;
             this.$api
                 .get(`/ai/app`)
                 .then( ({ data: { apps } }) => {
@@ -103,7 +135,7 @@ export default {
 
                 })
                 .finally( () => {
-
+                    this.loading.fetch = false;
                 })
         },
         createApp(){
@@ -171,50 +203,5 @@ export default {
             this.modals.view = value;
         },
     },
-    setup(){
-        // const store  = useStore();
-        // const $api   = inject('$api');
-        // const toast  = useToast();
-        // const router = useRouter();
-        // const swal   = inject('$swal');
-
-        // const toggleModal = (value) => {
-        //     data.modals.create = value;
-        // }
-
-        // const data = reactive({
-        //     modals:{
-        //         create: false,
-        //     },
-        //     columns: [
-        //         { text: "Id",         value: "id" },
-        //         { text: "Name",       value: "name" },
-        //         { text: "Secret",     value: "secret" },
-        //         { text: "Status",     value: "status" },
-        //         { text: "Created On", value: "createdAt" },
-        //     ],
-        //     rows:[
-        //         { id: "12345644", name:"Test App", secret: "aONJDBHFASJDSAJDI38748RD84H", status: "Active", createdAt: "12th Feb 2022"},
-        //         { id: "12345644", name:"Test App", secret: "aONJDBHFASJDSAJDI38748RD84H", status: "Active", createdAt: "12th Feb 2022"},
-        //         { id: "12345644", name:"Test App", secret: "aONJDBHFASJDSAJDI38748RD84H", status: "Active", createdAt: "12th Feb 2022"},
-        //         { id: "12345644", name:"Test App", secret: "aONJDBHFASJDSAJDI38748RD84H", status: "Active", createdAt: "12th Feb 2022"},
-        //         { id: "12345644", name:"Test App", secret: "aONJDBHFASJDSAJDI38748RD84H", status: "Active", createdAt: "12th Feb 2022"},
-        //         { id: "12345644", name:"Test App", secret: "aONJDBHFASJDSAJDI38748RD84H", status: "Active", createdAt: "12th Feb 2022"},
-        //         { id: "12345644", name:"Test App", secret: "aONJDBHFASJDSAJDI38748RD84H", status: "Active", createdAt: "12th Feb 2022"},
-        //         { id: "12345644", name:"Test App", secret: "aONJDBHFASJDSAJDI38748RD84H", status: "Active", createdAt: "12th Feb 2022"},
-        //         { id: "12345644", name:"Test App", secret: "aONJDBHFASJDSAJDI38748RD84H", status: "Active", createdAt: "12th Feb 2022"},
-        //         { id: "12345644", name:"Test App", secret: "aONJDBHFASJDSAJDI38748RD84H", status: "Active", createdAt: "12th Feb 2022"},
-        //         { id: "12345644", name:"Test App", secret: "aONJDBHFASJDSAJDI38748RD84H", status: "Active", createdAt: "12th Feb 2022"},
-        //         { id: "12345644", name:"Test App", secret: "aONJDBHFASJDSAJDI38748RD84H", status: "Active", createdAt: "12th Feb 2022"},
-        //         { id: "12345644", name:"Test App", secret: "aONJDBHFASJDSAJDI38748RD84H", status: "Active", createdAt: "12th Feb 2022"},
-        //         { id: "12345644", name:"Test App", secret: "aONJDBHFASJDSAJDI38748RD84H", status: "Active", createdAt: "12th Feb 2022"},
-        //         { id: "12345644", name:"Test App", secret: "aONJDBHFASJDSAJDI38748RD84H", status: "Active", createdAt: "12th Feb 2022"},
-        //         { id: "12345644", name:"Test App", secret: "aONJDBHFASJDSAJDI38748RD84H", status: "Active", createdAt: "12th Feb 2022"},
-        //         { id: "12345644", name:"Test App", secret: "aONJDBHFASJDSAJDI38748RD84H", status: "Active", createdAt: "12th Feb 2022"},
-        //         { id: "12345644", name:"Test App", secret: "aONJDBHFASJDSAJDI38748RD84H", status: "Active", createdAt: "12th Feb 2022"},
-        //         { id: "12345644", name:"Test App", secret: "aONJDBHFASJDSAJDI38748RD84H", status: "Active", createdAt: "12th Feb 2022"},
-        //     ]
-        // });
-    }
 }
 </script>

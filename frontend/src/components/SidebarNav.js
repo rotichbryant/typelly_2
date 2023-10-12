@@ -9,10 +9,7 @@ import {
   CNavTitle,
 } from '@coreui/vue'
 
-const normalizePath = (path) =>
-  decodeURI(path)
-    .replace(/#.*$/, '')
-    .replace(/(index)?\.(html)$/, '')
+const normalizePath = (path) => decodeURI(path).replace(/#.*$/, '').replace(/(index)?\.(html)$/, '')
 
 const isActiveLink = (route, link) => {
   if (link === undefined) {
@@ -42,7 +39,7 @@ const isActiveItem = (route, item) => {
 }
 
 const SidebarNav = defineComponent({
-  name: 'AppSidebarNav',
+  name: 'SidebarNav',
   components: {
     CNavItem,
     CNavGroup,
@@ -91,7 +88,7 @@ const SidebarNav = defineComponent({
                 resolveComponent(item.component),
                 {
                   active: props.isActive,
-                  href: props.href,
+                  href: "#",
                   onClick: () => props.navigate(),
                 },
                 {
@@ -127,14 +124,10 @@ const SidebarNav = defineComponent({
           )
     }
 
-    return () =>
-      h(
-        CSidebarNav,
-        {},
-        {
-          default: () => store.getters.sidebarMenus.map((item) => renderItem(item)),
-        },
-      )
+    return () => h( CSidebarNav, {}, {
+        default: () => store.getters.sidebarMenus.map((item) => renderItem(item)),
+      },
+    )
   },
 })
 export { SidebarNav }
