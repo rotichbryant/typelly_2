@@ -64,6 +64,7 @@
                     :show="modals.create"
                     :data="form"
                     :loading="loading.add"
+                    :models="models"
                     @submitForm="createApp"
                     @updateModal="updateModalAdd"
                 />
@@ -80,7 +81,7 @@
 <script>
 import CreateApp from './show/CreateApp.vue';
 import EditApp from './show/EditApp.vue';
-import { cloneDeep, findIndex,isEmpty, merge } from 'lodash';
+import { cloneDeep, findIndex,isEmpty, upperFirst } from 'lodash';
 
 export default {
     beforeRouteEnter(to, from, next) {
@@ -104,6 +105,7 @@ export default {
                 content_type:      String(),
                 hash_key:          String(),
                 files:             Array(),
+                model:             String(),
                 name:              String(),
                 welcome_message:   String(),
                 input_placeholder: String(),     
@@ -119,7 +121,8 @@ export default {
             modals:{
                 create:  Boolean(),
                 view: Boolean()
-            }
+            },
+            models: Array()
         }
     },
     methods:{
@@ -127,9 +130,10 @@ export default {
             this.loading.fetch = true;
             this.$api
                 .get(`/ai/app`)
-                .then( ({ data: { apps } }) => {
-                    apps.data = apps.data.map( val => ({...val,loading:false}));
-                    this.apps = cloneDeep(apps);
+                .then( ({ data: { apps, models } }) => {
+                    apps.data   = apps.data.map( val => ({...val,loading:false}));
+                    this.models = cloneDeep(models).map( (model) => ({ label: model.id.split('-').map( value => upperFirst(value)).join(' '), value: model.id }))
+                    this.apps   = cloneDeep(apps);
                 })
                 .catch( () => {
 
@@ -163,6 +167,7 @@ export default {
                 })
                 .finally( () => {
                     this.loading.add = false;
+                    this.modals.create = false;
                 });
         },
         fetchIndex(id){
