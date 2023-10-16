@@ -27,12 +27,6 @@ export class AppEntity {
   content_type: string;
 
   @Column()
-  name: string;
-
-  @Column()
-  welcome_message: string;
-
-  @Column()
   input_placeholder: string;
 
   @Column({
@@ -40,16 +34,17 @@ export class AppEntity {
   })
   hash_key: string;
 
+  @Column()
+  model: string;
+
+  @Column()
+  name: string;
+
   @Column({
     nullable: true,
     default: 0
   })
   publish: boolean;
-
-  @Column({
-    nullable: true
-  })
-  website: string
   
   @OneToMany(() => PromptEntity, (prompt) => prompt.app, { eager: true, cascade: true})
   prompts: PromptEntity[];
@@ -66,6 +61,14 @@ export class AppEntity {
 
   @Column()
   user_id: string;
+
+  @Column()
+  welcome_message: string;
+  
+  @Column({
+    nullable: true
+  })
+  website_url: string
 
   @CreateDateColumn()
   created_at: Date; // Creation date

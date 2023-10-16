@@ -10,8 +10,9 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { CacheModule } from '@nestjs/cache-manager';
 import { ConfigDatabase } from './config';
 import { AuthService, OpenAIService } from './services';
-import { ChatBotModule, CompanyModule, MailModule, UserModule, RoleModule, AiAppModule, PromptModule, MessageModule } from './modules';
-import { AppEntity, ChatBotEntity, CompanyEntity, MessageEntity, PromptEntity, RoleEntity, UserEntity } from './entities';
+import { ChatBotModule, CompanyModule, MailModule, UserModule, RoleModule, AiAppModule, PromptModule, MessageModule, SiteMapModule, FileModule } from './modules';
+import { AppEntity, ChatBotEntity, CompanyEntity, FileEntity, MessageEntity, PromptEntity, RoleEntity, SiteMapEntity, UserEntity } from './entities';
+import { HttpModule } from '@nestjs/axios';
 
 @Module({
   imports: [
@@ -21,6 +22,10 @@ import { AppEntity, ChatBotEntity, CompanyEntity, MessageEntity, PromptEntity, R
       isGlobal: true
     }), 
     CacheModule.register(),
+    HttpModule.register({
+      timeout: 5000,
+      maxRedirects: 5,
+    }),
     TypeOrmModule.forRoot({
       type:        "mysql",
       host:        process.env.DB_HOST,
@@ -32,9 +37,11 @@ import { AppEntity, ChatBotEntity, CompanyEntity, MessageEntity, PromptEntity, R
         AppEntity,
         ChatBotEntity,
         CompanyEntity,
+        FileEntity,
         MessageEntity,
         PromptEntity,
         RoleEntity,
+        SiteMapEntity,
         UserEntity
       ],
       synchronize: true
@@ -47,10 +54,12 @@ import { AppEntity, ChatBotEntity, CompanyEntity, MessageEntity, PromptEntity, R
     MailModule,   
     ChatBotModule,
     CompanyModule,
+    FileModule,
     MessageModule,
     AiAppModule,
     PromptModule,
     RoleModule,
+    SiteMapModule,
     UserModule 
   ],
   controllers: [AuthController,AiAppController, ChatbotController],

@@ -6,4 +6,5 @@ export { CreateMessageValidation as CreateMessageValidation } from './create.mes
 export { CreatePromptValidation as CreatePromptValidation } from './create.prompt.validation';
 export { QuestionValidation as QuestionValidation } from './question.validation';
 export { RegisterValidation as RegisterValidation } from './register.validation';
+export { SitemapValidation as SitemapValidation } from './sitemap.app.validation';
 export { UpdateAppValidation as UpdateAppValidation } from './update.app.validation';

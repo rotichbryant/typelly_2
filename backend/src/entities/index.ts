@@ -1,6 +1,8 @@
 export { AppEntity as AppEntity } from './app.entity';
 export { ChatBotEntity as ChatBotEntity } from './chatbot.entity';
 export { CompanyEntity as CompanyEntity } from './company.entity';
+export { FileEntity as FileEntity } from './file.entity';
+export { SiteMapEntity as SiteMapEntity } from './sitemap.entity';
 export { MessageEntity as MessageEntity } from './message.entity';
 export { PromptEntity as PromptEntity } from './prompt.entity';
 export { RoleEntity as RoleEntity } from './role.entity';
