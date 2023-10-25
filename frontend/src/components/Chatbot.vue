@@ -113,10 +113,10 @@
         </CFooter>
     </CCard>    
 </template>
-<script lang="ts" >
+<script>
     import { EventSourcePolyfill } from 'event-source-polyfill'
     import moment from 'moment';
-    import { cloneDeep } from 'lodash';
+    import { cloneDeep, isEmpty } from 'lodash';
     export default {
         beforeCreate(){ 
 
@@ -148,7 +148,7 @@
             chatbot(){
                 return this.tools;
             },
-            mode_badge(): String{
+            mode_badge(){
                 return this.live ? "Live" : "Testing";
             }
         }, 
@@ -176,7 +176,7 @@
                 const { botInfo:{ id }, question } = this;
                 this.$api
                     .post(`chatbot/${id}/update`,{content: question, type: 'question'})
-                    .then( ({ data: { message} }) => {
+                    .then( ({ data: { message } }) => {
                         message.create_at = moment(message.create_at).format('D MMM YY h:mm a');
                         this.messages.push(message);    
                         this.loading.question = true
@@ -209,20 +209,16 @@
                 });
 
                 es.addEventListener("message", ({data}) => {
-                    const { delta:{ content }, finish_reason } = JSON.parse(data);
-
-                    if( finish_reason == "stop"){
+                    if( !isEmpty(data) ){
                         this.loading.question = false;
                         this.question         = String();
                         this.registerResponse();
                         es.close();
-                    } 
 
-                    if( finish_reason == null ){
                         if( this.messages[(this.messages.length - 1)].loading ){
                             this.messages[(this.messages.length - 1)].loading = false;
                         }
-                        this.messages[(this.messages.length - 1)].content += content;
+                        this.messages[(this.messages.length - 1)].content = data;
                     }
                 }); 
             },

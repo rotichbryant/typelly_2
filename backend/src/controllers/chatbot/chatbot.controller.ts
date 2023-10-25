@@ -1,4 +1,4 @@
-import { Body, Controller, HttpStatus, Ip, Param, Post, Put, Sse, Req, Res, UseGuards } from '@nestjs/common';
+import { Body, Controller, HttpStatus, Ip, Param, Post, Put, Get, Sse, Req, Res, UseGuards } from '@nestjs/common';
 import { AuthGuard, ChatBotGuard } from '../../guards';
 import { Request, Response } from 'express';
 import { AppModel, ChatBotModel } from 'src/models';
@@ -7,7 +7,10 @@ import { AuthService, OpenAIService } from 'src/services';
 import { CreateMessageValidation, QuestionValidation } from 'src/validation';
 import { MessageModel } from 'src/models/message.model';
 import { isEmpty, set } from 'lodash';
-import { Observable, Subject, from, map } from 'rxjs';
+import { Observable, ReadableStreamLike, Subject, from, map } from 'rxjs';
+import ChromaHelper from 'src/common/helpers/chroma.helper';
+import { OpenAIEmbeddings } from 'langchain/embeddings/openai';
+import { IterableReadableStream } from 'langchain/dist/util/stream';
 
 @Controller('chatbot')
 export class ChatbotController {
@@ -44,9 +47,9 @@ export class ChatbotController {
 
     @UseGuards(AuthGuard)
     @Post(':appId/create')
-    async create(@Body() createMessage: CreateMessageValidation, @Param('appId') appId: string, @Ip() ip: string, @Req() req: Request, @Res() res: Response) {
+    async create(@Body() createMessage: CreateMessageValidation, @Param('appId') appId: string, @Req() req: Request, @Res() res: Response) {
         try{
-            const chatbot = await this.chatbotModel.save({ ip_address: ip, app_id: appId });
+            const chatbot = await this.chatbotModel.save({ app_id: appId });
             createMessage = set(createMessage,"chatbot_id",chatbot.id);
 
             const message = await this.messageModel.save(createMessage);
@@ -82,19 +85,29 @@ export class ChatbotController {
 
     @UseGuards(AuthGuard)
     @Sse(':messageId/response')
-    async chatbot(@Param('messageId') messageId: string, @Res() res: Response): Promise<Observable<any>>{
+    async chatbot(@Param('messageId') messageId: string, @Req() req: Request, @Res() res: Response): Promise<Observable<any>> {
         try{
-            const message = await this.messageModel.findOneBy({id: messageId });
+           
+            const message      = await this.messageModel.findOneBy({id: messageId });
+            const stream       = await this.openaiService.search(message);
+            const { Readable } = require("stream");
+            const getData      = Readable.from(stream);
+            return from( 
+                new Observable().pipe(
+                    () => getData.on("data", (chunk) => {
+                        return chunk;
+                    })
+                )
 
-            const stream   = await this.openaiService.createCompletion(message.content);
-
-            return from(stream).pipe(
-                map( ({ choices }) => {
-                    return { data: choices[0] } as MessageEvent;                               
+            ).pipe(
+                map( (data:any) => {
+                    return { data: data.text  } as MessageEvent; 
                 })
             );
-        } catch(e){
 
+        } catch(e){
+            console.log(e);
+            res.status(e.status).json({ message: e.error.message });
         }
     }     
 

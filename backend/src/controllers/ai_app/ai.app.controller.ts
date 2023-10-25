@@ -5,13 +5,19 @@ import { CreateAppValidation, CreatePromptValidation, SitemapValidation, UpdateA
 import { AppModel, FileModel, PromptModel, SiteMapModel, UserModel } from 'src/models';
 import { ConfigService } from '@nestjs/config';
 import { cloneDeep,get, isEmpty, isNull, omit, set } from 'lodash';
-import { Paginate, PaginateQuery } from 'pagination-typeorm-nestjs';
+import { Paginate, PaginateQuery } from '@ai-em/nestjs-paginate'
 import { OpenAIService } from 'src/services';
 import { from, interval, map, Observable } from 'rxjs';
 import { HttpService } from '@nestjs/axios'; 
 import { ExceptionsHandler } from '@nestjs/core/exceptions/exceptions-handler';
-import { decode } from 'js-base64';
 import { createFile } from 'src/common/helpers/storage.helper';
+import ChromaHelper from 'src/common/helpers/chroma.helper';
+import { OpenAIEmbeddings } from "langchain/embeddings/openai";
+import { DirectoryLoader } from "langchain/document_loaders/fs/directory";
+import { JSONLoader, JSONLinesLoader } from "langchain/document_loaders/fs/json";
+import { TextLoader } from "langchain/document_loaders/fs/text";
+import { CSVLoader } from "langchain/document_loaders/fs/csv";
+import { PDFLoader } from "langchain/document_loaders/fs/pdf";
 
 @Controller('ai/app')
 export class AiAppController {
@@ -35,11 +41,12 @@ export class AiAppController {
         @Paginate() query: PaginateQuery,
     ) {
         try{
-            const { id } = get(req,'user');
+            const { id } = get(req,'user'),path = require('path');
             query.search = id;
 
-            const apps   = await this.aiAppModel.get(query);
+            const apps             = await this.aiAppModel.get(query);
             const { data: models } = await this.openaiService.models();
+
             res.status(HttpStatus.OK).json({apps,models});
             
         } catch (e) {
@@ -67,13 +74,14 @@ export class AiAppController {
                             link = set(link,'app_id',app.id);
                             this.siteMapModel.save(link);
                         }),
-                        createApp.files.map( async(file): Promise<any> =>{
+                        createApp.files.map( async(file: string): Promise<any> =>{
                             let [ type_1, type_2 ] = getImageMime(file).split('/');
                             let filename = `FILE_${new Date().getTime()}.${type_2}`;
+                            
                             createFile(
-                                `${process.cwd()}${path.sep}src${path.sep}storage${path.sep}public${path.sep}documents`,
+                                `${process.cwd()}${path.sep}src${path.sep}storage${path.sep}public${path.sep}${app.id}`,
                                 filename,
-                                decode(file)
+                                atob(file.split(',')[1]),                            
                             ).then( () =>{
                                 this.fileModel.save({
                                     name: filename,
@@ -82,8 +90,39 @@ export class AiAppController {
                             });                                
                         })
                     ])
-                    .then( () => {
-                        res.status(HttpStatus.OK).json({app});
+                    .then( async(): Promise<any> =>  {
+                        try{
+                            const loader = new DirectoryLoader(
+                                `${process.cwd()}${path.sep}src${path.sep}storage${path.sep}public${path.sep}${app.id}`,
+                                {
+                                    ".json": (path) => new JSONLoader(path, "/texts"),
+                                    ".jsonl": (path) => new JSONLinesLoader(path, "/html"),
+                                    ".txt": (path) => new TextLoader(path),
+                                    ".csv": (path) => new CSVLoader(path, "text"),
+                                    ".pdf": (path) => new PDFLoader(path,{
+                                        // you may need to add `.then(m => m.default)` to the end of the import
+                                        pdfjs: () => import("pdfjs-dist/legacy/build/pdf.js")
+                                    }),
+                                }
+                            );       
+                            // Create vector store and index the docs
+                            const docs = await loader.load();
+                            ChromaHelper.fromDocuments(
+                                docs,
+                                new OpenAIEmbeddings(), 
+                                {
+                                    collectionName: app.id,
+                                    url: this.configService.get('VECTOR_DB_URL'), // Optional, will default to this value
+                                    collectionMetadata: {
+                                        "hnsw:space": "cosine",
+                                    }, // Optional, can be used to specify the distance method of the embedding space https://docs.trychroma.com/usage-guide#changing-the-distance-function
+                                }
+                            );  
+
+                            res.status(HttpStatus.OK).json({app});
+                        } catch(err) {
+                            console.log(err);   
+                        }                                              
                     })
                 });
         } catch(e){
@@ -174,13 +213,6 @@ export class AiAppController {
         } catch(e){
             res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({});
         }
-    } 
-
-    // @UseGuards(AuthGuard)
-    @Sse('chatbot')
-    async chatbot(@Res() res: Response): Promise<Observable<any>>{
-        const stream   = await this.openaiService.createCompletion("Test");
-        return from(stream).pipe(map((i) => ({ data: i })));
     } 
 
     @UseGuards(AuthGuard)

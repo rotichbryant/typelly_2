@@ -1,7 +1,4 @@
 import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn, OneToMany, JoinColumn, ManyToOne } from 'typeorm';
-import { PromptEntity } from './prompt.entity';
-import { UserEntity } from './user.entity';
-import { AppEntity } from './app.entity';
 import { ChatBotEntity } from './chatbot.entity';
 
 export enum MessageType {
@@ -15,7 +12,7 @@ export class MessageEntity {
   @PrimaryGeneratedColumn("uuid")
   id: string;
 
-  @ManyToOne(() => ChatBotEntity, (chatbot) => chatbot.messages,{ eager: false, lazy: true,  onDelete: 'CASCADE', onUpdate: 'CASCADE' } )
+  @ManyToOne(() => ChatBotEntity, (chatbot) => chatbot.messages,{ eager: true, lazy: false,  onDelete: 'CASCADE', onUpdate: 'CASCADE' } )
   @JoinColumn({
     name:                 "chatbot_id",
     referencedColumnName: "id",

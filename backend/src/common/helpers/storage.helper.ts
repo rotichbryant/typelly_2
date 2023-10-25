@@ -42,6 +42,7 @@ export const createFile = async (
   path: string,
   fileName: string,
   data: string,
+  encode: string = 'binary'
 ): Promise<void> => {
   if (!checkIfFileOrDirectoryExists(path)) {
     fs.mkdirSync(path);
@@ -49,7 +50,7 @@ export const createFile = async (
 
   const writeFile = promisify(fs.writeFile);
 
-  return await writeFile(`${path}/${fileName}`, data, 'utf8');
+  return await writeFile(`${path}/${fileName}`, data, encode);
 };
 
 /**

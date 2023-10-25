@@ -4,7 +4,7 @@ import { AppEntity } from '../entities';
 import { AppRepository } from '../repositories';
 import { DeleteResult, UpdateResult } from 'typeorm';
 import { first } from 'lodash';
-import { PaginateQuery, paginate, Paginated } from 'pagination-typeorm-nestjs'
+import { FilterOperator, FilterSuffix, Paginate, PaginateQuery, paginate, Paginated } from '@ai-em/nestjs-paginate'
 
 @Injectable()
 export class AppModel {
@@ -17,6 +17,7 @@ export class AppModel {
     return paginate(query, this.appRepository, {
       sortableColumns:   ['name'],
       searchableColumns: ['user_id'],
+    
     })
   }
 

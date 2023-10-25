@@ -8,13 +8,10 @@ export class ChatBotEntity {
   @PrimaryGeneratedColumn("uuid")
   id: string;
 
-  @Column()
-  ip_address: string;
-
-  @OneToMany(() => MessageEntity, (message) => message.chatbot, { eager: true, cascade: true})
+  @OneToMany(() => MessageEntity, (message) => message.chatbot, { eager: false, lazy: true, cascade: true})
   messages: MessageEntity[];
 
-  @ManyToOne(() => AppEntity, (app) => app.chatbots,{ eager: false,  onDelete: 'CASCADE', onUpdate: 'CASCADE'})
+  @ManyToOne(() => AppEntity, (app) => app.chatbots,{ eager: true, lazy: false, onDelete: 'CASCADE', onUpdate: 'CASCADE'})
   @JoinColumn({
     name:                 "app_id",
     referencedColumnName: "id",

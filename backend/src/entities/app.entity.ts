@@ -2,6 +2,7 @@ import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateCol
 import { PromptEntity } from './prompt.entity';
 import { UserEntity } from './user.entity';
 import { ChatBotEntity } from './chatbot.entity';
+import { FileEntity } from './file.entity';
 
 
 export enum ContentType {
@@ -46,11 +47,14 @@ export class AppEntity {
   })
   publish: boolean;
   
-  @OneToMany(() => PromptEntity, (prompt) => prompt.app, { eager: true, cascade: true})
+  @OneToMany(() => PromptEntity, (prompt) => prompt.app, { eager: false, lazy: true, cascade: true})
   prompts: PromptEntity[];
 
-  @OneToMany(() => ChatBotEntity, (chatbot) => chatbot.app, { eager: true, cascade: true})
+  @OneToMany(() => ChatBotEntity, (chatbot) => chatbot.app, { eager: false, lazy: true, cascade: true})
   chatbots: ChatBotEntity[];
+
+  @OneToMany(() => FileEntity, (file) => file.app, { eager: false, lazy: true, cascade: true})
+  files: FileEntity[];
 
   @ManyToOne(() => UserEntity, (user) => user.apps,{ eager: false,  onDelete: 'CASCADE', onUpdate: 'CASCADE'})
   @JoinColumn({

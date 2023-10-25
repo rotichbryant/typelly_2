@@ -34,31 +34,31 @@ async function run(){
     setEnvValue("APP_KEY",randomstring.generate(50));
     setEnvValue("JWT_SESSION_KEY",randomstring.generate(100));
 
-    app.get(CompanyModel)
-        .save(this.company)
-        .then( (company) => {
-            console.log("[COMPANY INSTALLATION DONE]")
-            Promise.all(
-                this.roles.map( async(role) => {
-                    this.app
-                        .get(RoleModel)
-                        .save(role)
-                        .then( () =>{
-                            console.log("[ROLES INSTALLATION DONE]")
-                        });
-                })
-            ).then( (roles) => {
-                console.log(roles);
-            //     this.admin['company_id'] = ;
-            //     this.admin['role_id']    = roles.filter( val => val.name == "admin").id;
-            //     this.userModel
-            //         .save(this.admin)
-            //         .then( () => {
-            //             console.log("[USER INSTALLATION DONE]")
-            //         });                 
-            // });
-            })
-        })
+    // app.get(CompanyModel)
+    //     .save(this.company)
+    //     .then( (company) => {
+    //         console.log("[COMPANY INSTALLATION DONE]")
+    //         Promise.all(
+    //             this.roles.map( async(role) => {
+    //                 this.app
+    //                     .get(RoleModel)
+    //                     .save(role)
+    //                     .then( () =>{
+    //                         console.log("[ROLES INSTALLATION DONE]")
+    //                     });
+    //             })
+    //         ).then( (roles) => {
+    //             console.log(roles);
+    //         //     this.admin['company_id'] = ;
+    //         //     this.admin['role_id']    = roles.filter( val => val.name == "admin").id;
+    //         //     this.userModel
+    //         //         .save(this.admin)
+    //         //         .then( () => {
+    //         //             console.log("[USER INSTALLATION DONE]")
+    //         //         });                 
+    //         // });
+    //         })
+    //     })
 
 
 }

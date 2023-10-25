@@ -147,6 +147,7 @@ export default {
             this.$api
                 .post('/ai/app/create',this.form)
                 .then( ({ data:{ app } }) => {
+                    this.resetForm();
                     this.$swal.fire({
                         icon: 'success',
                         title: 'Alright!',
@@ -158,26 +159,41 @@ export default {
                 })
                 .catch( (err) => {
                     console.log(err);
-                    this.loading.add = false;
+                    // this.loading.add = false;
                     this.$swal.fire({
                         icon: 'error',
                         title: 'Hmmmm!',
                         text: 'Something went wrong.'
                     });
                 })
-                .finally( () => {
-                    this.loading.add = false;
+                .finally( () => {                    
                     this.modals.create = false;
                 });
         },
         fetchIndex(id){
             return findIndex(this.apps.data,(val) => val.id = id);
         },
+        resetForm(){
+            this.form = {
+                api_key:           String(),
+                content_type:      String(),
+                hash_key:          String(),
+                files:             Array(),
+                model:             String(),
+                name:              String(),
+                welcome_message:   String(),
+                input_placeholder: String(),     
+                prompts:           Array(),
+                sitemap:           Array(),   
+                website:           String()
+            };
+        },
         viewApp(id){
             this.apps.data[this.fetchIndex(id)].loading = true;
             this.$api
                 .put(`/ai/app/${id}/show`)
                 .then( ({ data: { app } }) => {
+                    if( !isEmpty(this.app) ){ this.app = {}; }
                     this.app = cloneDeep(app);
                     this.modals.view = true;
                 })
@@ -208,5 +224,12 @@ export default {
             this.modals.view = value;
         },
     },
+    watch:{
+        "modals.view"(val){
+            if( val == false ){
+                this.app = Object();
+            }
+        }
+    }
 }
 </script>
