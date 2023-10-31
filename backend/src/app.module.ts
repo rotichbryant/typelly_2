@@ -14,6 +14,8 @@ import { ChatBotModule, CompanyModule, MailModule, UserModule, RoleModule, AiApp
 import { AppEntity, ChatBotEntity, CompanyEntity, FileEntity, MessageEntity, PromptEntity, RoleEntity, SiteMapEntity, UserEntity } from './entities';
 import { HttpModule } from '@nestjs/axios';
 
+console.log(process.env);
+
 @Module({
   imports: [
     ConfigModule.forRoot({
