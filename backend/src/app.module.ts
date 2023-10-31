@@ -14,8 +14,6 @@ import { ChatBotModule, CompanyModule, MailModule, UserModule, RoleModule, AiApp
 import { AppEntity, ChatBotEntity, CompanyEntity, FileEntity, MessageEntity, PromptEntity, RoleEntity, SiteMapEntity, UserEntity } from './entities';
 import { HttpModule } from '@nestjs/axios';
 
-console.log(process.env);
-
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -28,30 +26,38 @@ console.log(process.env);
       timeout: 5000,
       maxRedirects: 5,
     }),
-    TypeOrmModule.forRoot({
-      type:        "mysql",
-      host:        process.env.DB_HOST,
-      port:        parseInt(process.env.DB_PORT),
-      database:    process.env.DB_DATABASE,
-      username:    process.env.DB_USERNAME,
-      password:    process.env.DB_PASSWORD,
-      entities:    [
-        AppEntity,
-        ChatBotEntity,
-        CompanyEntity,
-        FileEntity,
-        MessageEntity,
-        PromptEntity,
-        RoleEntity,
-        SiteMapEntity,
-        UserEntity
-      ],
-      synchronize: true
+    TypeOrmModule.forRootAsync({
+      imports: [ConfigModule],
+      useFactory: (configService: ConfigService) => ({
+        type:        "mysql",
+        host:        configService.get('DB_HOST'),
+        port:        parseInt(configService.get('DB_PORT')),
+        database:    configService.get('DB_DATABASE'),
+        username:    configService.get('DB_USERNAME'),
+        password:    configService.get('DB_PASSWORD'),
+        entities:    [
+          AppEntity,
+          ChatBotEntity,
+          CompanyEntity,
+          FileEntity,
+          MessageEntity,
+          PromptEntity,
+          RoleEntity,
+          SiteMapEntity,
+          UserEntity
+        ],
+        synchronize: true
+      }),
+      inject: [ConfigService],
     }),
     PassportModule,
-    JwtModule.register({
-      secret: process.env.JWT_SESSION_KEY,
-      signOptions: { expiresIn: process.env.JWT_SESSION_EXPIRES },
+    JwtModule.registerAsync({
+      imports: [ConfigModule],
+      useFactory: async (configService: ConfigService) => ({
+        secret: configService.get('JWT_SESSION_KEY'),
+        signOptions: { expiresIn: configService.get('JWT_SESSION_EXPIRES') },
+      }),
+      inject: [ConfigService],
     }),
     MailModule,   
     ChatBotModule,
