@@ -30,6 +30,10 @@ import { HttpModule } from '@nestjs/axios';
       imports: [ConfigModule],
       useFactory: (configService: ConfigService) => {
         console.log(configService.get('DB_HOST'));
+        console.log(configService.get('DB_PORT'));
+        console.log(configService.get('DB_DATABASE'));
+        console.log(configService.get('DB_USERNAME'));
+        console.log(configService.get('DB_PASSWORD'));
         return {
           type:        "mysql",
           host:        configService.get('DB_HOST'),
