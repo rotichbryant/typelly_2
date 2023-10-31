@@ -57,7 +57,7 @@ export class OpenAIService{
     }
 
     async models(){
-        const openai = new OpenAIapi({apiKey:""});
+        const openai = new OpenAIapi();
         return await openai.models.list();
     }
 
