@@ -10,6 +10,7 @@ import {
   import { DataSource } from 'typeorm';
   import { UserEntity } from '../entities';
   import { set } from 'lodash';
+import { ConfigService } from '@nestjs/config';
   
   @Injectable()
   export class AuthGuard implements CanActivate {
@@ -18,6 +19,7 @@ import {
     
     constructor(
       private jwtService: JwtService,
+      private configService: ConfigService,
       @Inject(DataSource) private readonly dataSource: DataSource    
     ) {
       this.userEntity = this.dataSource.getRepository(UserEntity);
@@ -30,7 +32,7 @@ import {
         throw new UnauthorizedException();
       }
       try {
-        const { user: { email } } = await this.jwtService.verifyAsync(token,{secret: process.env.JWT_SESSION_KEY});
+        const { user: { email } } = await this.jwtService.verifyAsync(token,{secret: this.configService.get('JWT_SESSION_KEY') });
         // 💡 We're assigning the payload to the request object here
         // so that we can access it in our route handlers
         set(request,'user', await this.userEntity.findOneBy({email}));
