@@ -1,11 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
-import { subscribe } from "diagnostics_channel";
-import Configuration from 'openai';
-import OpenAIapi from 'openai';
+import OpenAIApi from 'openai';
 import { OpenAI } from "langchain/llms/openai";
-import { isEmpty } from 'lodash';
-import { AppModel } from "src/models";
 import ChromaHelper from "src/common/helpers/chroma.helper";
 import { OpenAIEmbeddings } from "langchain/embeddings/openai";
 import { PromptTemplate } from "langchain/prompts";
@@ -57,7 +53,7 @@ export class OpenAIService{
     }
 
     async models(){
-        const openai = new OpenAIapi();
+        const openai = new OpenAIApi({apiKey: this.configService.get('OPENAI_API_KEY') });
         return await openai.models.list();
     }
 
