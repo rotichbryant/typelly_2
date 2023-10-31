@@ -46,7 +46,7 @@ import { HttpModule } from '@nestjs/axios';
             SiteMapEntity,
             UserEntity
           ],
-          synchronize: true
+          synchronize: false
       }),
       inject: [ConfigService],
     }),
