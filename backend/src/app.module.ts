@@ -28,13 +28,7 @@ import { HttpModule } from '@nestjs/axios';
     }),
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
-      useFactory: (configService: ConfigService) => {
-        console.log(configService.get('DB_HOST'));
-        console.log(configService.get('DB_PORT'));
-        console.log(configService.get('DB_DATABASE'));
-        console.log(configService.get('DB_USERNAME'));
-        console.log(configService.get('DB_PASSWORD'));
-        return {
+      useFactory: (configService: ConfigService) => ({
           type:        "mysql",
           host:        configService.get('DB_HOST'),
           port:        parseInt(configService.get('DB_PORT')),
@@ -53,8 +47,7 @@ import { HttpModule } from '@nestjs/axios';
             UserEntity
           ],
           synchronize: true
-        }
-      },
+      }),
       inject: [ConfigService],
     }),
     PassportModule,
