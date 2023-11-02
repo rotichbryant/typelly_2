@@ -13,28 +13,37 @@
                         </CCol>
                     </CRow>
                     <CRow>
-                        <template v-if="!$isEmpty(apps)">
-                            <CCol md="3" xs="12" v-for="(app,key) in apps.data" :key="`app_${key}`">
+                        <template v-if="!$isEmpty(apps.data)">
+                            <CCol md="4" xs="12" class="mb-3" v-for="(app,key) in apps.data" :key="`app_${key}`">
                                 <CCard>
-                                    <CHeader class="justify-content-center">
-                                        <CCardTitle class="m-0">{{ app.name }}</CCardTitle>
-                                    </CHeader>
                                     <CCardBody>
-                                        <CCardSubtitle class="mb-2 text-muted">Bot Instances: 3</CCardSubtitle>
-                                        <CCardSubtitle class="mb-2 text-muted">Content Sources: 6 </CCardSubtitle>
-                                        <CCardSubtitle class="mb-2 text-muted">Interactions: 50</CCardSubtitle>
+                                        <CRow>
+                                            <CCol class="d-flex justify-content-end">
+                                                <CDropdown variant="nav-item" alignment="start" class="d-flex align-items-center">
+                                                    <CDropdownToggle color="secondary" :caret="false">
+                                                        <CIcon name="cilOptions"/>
+                                                    </CDropdownToggle>
+                                                    <CDropdownMenu>
+                                                        <CDropdownItem href="#" @click="viewApp(app)">
+                                                            <CSpinner v-show="app.loading" component="span" size="sm" aria-hidden="true"/>
+                                                            <CIcon v-show="!app.loading" name="cil-pencil"/>    
+                                                            Edit                                                            
+                                                        </CDropdownItem>
+                                                        <CDropdownItem href="#" class="text-danger" @click="deleteApp(app)">
+                                                            <CIcon name="cil-trash"/>
+                                                            Delete
+                                                        </CDropdownItem>
+                                                    </CDropdownMenu>
+                                                </CDropdown>                                                
+                                            </CCol>
+                                            <CCol class="col-12 text-center">
+                                                <CAvatar color="primary" class="text-white" size="xl">{{ app.name[0] }}</CAvatar>
+                                                <CCardTitle class="mt-2">{{ app.name }}</CCardTitle>
+                                                <p>{{ $moment(app.created_at).format('Do MMMM YYYY') }}</p>
+                                            </CCol>
+                                        </CRow>
+                                    
                                     </CCardBody>
-                                    <CFooter>
-                                        <CCol class="d-flex justify-content-between">
-                                            <CButton color="secondary" variant="outline" class="text-primary" @click="viewApp(app.id)">
-                                                <CSpinner v-show="loading.view" component="span" size="sm" aria-hidden="true"/>
-                                                <CIcon v-show="!loading.view" name="cil-pencil"/>
-                                            </CButton>
-                                            <CButton color="secondary" variant="outline" class="text-danger" @click="deleteApp(app.id)">
-                                                <CIcon name="cil-trash"/>
-                                            </CButton>
-                                        </CCol>
-                                    </CFooter>
                                 </CCard>                    
                             </CCol>
                             <CCol md="12" xs="12" class="d-flex justify-content-center my-4">
@@ -64,7 +73,6 @@
                     :show="modals.create"
                     :data="form"
                     :loading="loading.add"
-                    :models="models"
                     @submitForm="createApp"
                     @updateModal="updateModalAdd"
                 />
@@ -82,7 +90,7 @@
 import CreateApp from './show/CreateApp.vue';
 import EditApp from './show/EditApp.vue';
 import { cloneDeep, findIndex,isEmpty, upperFirst } from 'lodash';
-
+import moment from 'moment';
 export default {
     beforeRouteEnter(to, from, next) {
         next((vm) => {
@@ -95,6 +103,7 @@ export default {
     },
     created(){
         this.$isEmpty = isEmpty;
+        this.$moment  = moment;
     },
     data(){
         return {
@@ -103,7 +112,6 @@ export default {
             form:{
                 api_key:           String(),
                 content_type:      String(),
-                hash_key:          String(),
                 files:             Array(),
                 model:             String(),
                 name:              String(),
@@ -111,7 +119,7 @@ export default {
                 input_placeholder: String(),     
                 prompts:           Array(),
                 sitemap:           Array(),   
-                website:           String()
+                website_url:       String()
             },
             loading:{
                 add: Boolean(),
@@ -122,7 +130,6 @@ export default {
                 create:  Boolean(),
                 view: Boolean()
             },
-            models: Array()
         }
     },
     methods:{
@@ -130,10 +137,9 @@ export default {
             this.loading.fetch = true;
             this.$api
                 .get(`/ai/app`)
-                .then( ({ data: { apps, models } }) => {
-                    apps.data   = apps.data.map( val => ({...val,loading:false}));
-                    this.models = cloneDeep(models).map( (model) => ({ label: model.id.split('-').map( value => upperFirst(value)).join(' '), value: model.id }))
-                    this.apps   = cloneDeep(apps);
+                .then( ({ data: { apps } }) => {
+                    apps.data = apps.data.map( val => ({...val,loading:false}));
+                    this.apps = cloneDeep(apps);
                 })
                 .catch( () => {
 
@@ -156,18 +162,21 @@ export default {
                         this.modals.add = false;
                         this.fetch() 
                     });
+                    this.modals.create = false;
                 })
                 .catch( (err) => {
-                    console.log(err);
-                    // this.loading.add = false;
+                    this.loading.add = false;
+                    let message = 'Something went wrong.'
+
+                    if( err.response ){
+                        message = err.response.data.message;
+                    }
+
                     this.$swal.fire({
                         icon: 'error',
                         title: 'Hmmmm!',
-                        text: 'Something went wrong.'
+                        text: message
                     });
-                })
-                .finally( () => {                    
-                    this.modals.create = false;
                 });
         },
         fetchIndex(id){
@@ -185,10 +194,10 @@ export default {
                 input_placeholder: String(),     
                 prompts:           Array(),
                 sitemap:           Array(),   
-                website:           String()
+                website_url:       String()
             };
         },
-        viewApp(id){
+        viewApp({id}){
             this.apps.data[this.fetchIndex(id)].loading = true;
             this.$api
                 .put(`/ai/app/${id}/show`)
@@ -204,18 +213,35 @@ export default {
                     this.apps.data[this.fetchIndex(id)].loading = false;
                 })
         },
-        deleteApp(id){
-            this.$api
-                .get(`/ai/app/${id}/delete`)
-                .then( ({ data: { apps } }) => {
-                    this.apps = cloneDeep(apps);
-                })
-                .catch( () => {
+        deleteApp({id,name}){
+            this.$swal.fire({
+                icon: 'warning',
+                title: 'Are you sure ?',
+                text: `You are about to delete ${name} chatbot. This process is irreversible.`,
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Yes, delete it!'
+            }).then( (result) => {
+                if( result.isConfirmed ){
+                    this.$api
+                        .delete(`/ai/app/${id}/delete`)
+                        .then( () => {
+                            this.$swal.fire({
+                                icon:  'success',
+                                title: 'Alright!',
+                                text:  `${name} chatbot has been deleted.`
+                            })                            
+                            this.fetch() 
+                        })
+                        .catch( () => {
 
-                })
-                .finally( () => {
+                        })
+                        .finally( () => {
 
-                })
+                        })                    
+                }
+            });            
         },
         updateModalAdd(value){
             this.modals.create = value;

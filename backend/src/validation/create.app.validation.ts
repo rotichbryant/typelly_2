@@ -27,10 +27,6 @@ export class CreateAppValidation {
   @IsString()
   api_key: string
 
-  @IsNotEmpty()
-  @IsString()
-  hash_key: string
-
   @IsArray()
   @ValidateNested({ each: true })
   @ArrayMinSize(1)

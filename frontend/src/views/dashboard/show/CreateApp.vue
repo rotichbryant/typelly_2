@@ -51,7 +51,7 @@
                             </CFormText>
                         </CCol>                                                              
                     </CCol>
-                    <CCol class="col-md-12">
+                    <!-- <CCol class="col-md-12">
                         <CCol class="py-2">
                             <CFormLabel for="hash_key" class="my-0">Hash Key</CFormLabel>
                             <CFormInput id="hash_key" placeholder="eg. HYdoe779jhytsmGTG" v-model="form.hash_key" disabled/>
@@ -60,10 +60,11 @@
                                 <p class="mb-0" v-show="!$has(errors.form,'hash_key')">Automatically generated when you add the api key</p>	                    
                             </CFormText>
                         </CCol>
-                    </CCol>
+                    </CCol> -->
                     <CCol class="col-md-12">
                         <CCol class="py-2">
                             <CFormSelect
+                                :disabled="$isEmpty(models)"
                                 label="Select Model"
                                 aria-label="Select model"
                                 :options="listModels"
@@ -101,7 +102,7 @@
                         </template>
                         <template v-else>
                             <CCard class="mt-3">
-                                <CCardBody>
+                                <CCardBody class="overflow-x">
                                     <CRow v-if="form.content_type == 'documents'">
                                         <CCol>
                                             <CFormInput accept=".doc,.docx,.pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document, .txt" type="file" id="formFileMultiple" label="File upload." multiple @change="uploadFiles($event)" />
@@ -121,23 +122,20 @@
                                             <p class="text-danger mb-0" v-show="$has(errors.local,'sitemap_url')">{{errors.local.sitemap_url}}</p>								
                                             <p class="mb-0" v-show="!$has(errors.local,'sitemap_url')">You can select multiple files</p>
                                         </CCol>
-                                        <CCol class="col-12 mt-4" v-show="!$isEmpty(local.sitemap_links)">
+                                        <CCol class="col-12 mt-4 overflo" v-show="!$isEmpty(local.sitemap_links)">
                                             <h6>Sitemap links</h6>
-                                            <CButtonGroup vertical role="group" aria-label="Vertical button group">
-                                                <template v-for="(link,key) in s_links[sitemap_data.page - 1]" :key="key">
-                                                    <CFormCheck type="checkbox" :button="{ color: 'primary', variant: 'outline' }" name="links" :id="`link_${(sitemap_data.page-1)}_${key}`" autocomplete="off" :label="link"/>
-                                                </template>              
-                                            </CButtonGroup>
-                                            <pagination v-model="local.page" :records="local.sitemap_links.length" :per-page="10" @paginate="console.log($event)"/>     
+                                            <template v-for="(link,key) in local.sitemap_links" :key="key">
+                                                <CFormCheck id="defaultCheck1" :value="link" :label="link" @change="updateSitemap"/>
+                                            </template>                                              
                                             <p class="text-danger mb-0" v-show="$has(errors.form,'sitemap')">{{errors.form.sitemap}}</p>								
                                             <p class="mb-0" v-show="!$has(errors.form,'sitemap')">You can select multiple site links</p>	                                                                                                                                                                       
                                         </CCol>                                                 
                                     </CRow>
                                     <CRow v-if="form.content_type  == 'website'">
                                         <CCol>
-                                            <CFormInput label="Website Url" placeholder="eg. http://example.com" aria-label="Sizing example input" aria-describedby="inputGroup-sizing-default"/>
-                                            <p class="text-danger mb-0" v-show="$has(errors.form,'website')">{{errors.form.website}}</p>								
-                                            <p class="mb-0" v-show="!$has(errors.form,'website')">Add a website link.</p>	                                         
+                                            <CFormInput label="Website Url" v-model="form.website_url" placeholder="eg. http://example.com" aria-label="Sizing example input" aria-describedby="inputGroup-sizing-default"/>
+                                            <p class="text-danger mb-0" v-show="$has(errors.form,'website_url')">{{errors.form.website_url}}</p>								
+                                            <p class="mb-0" v-show="!$has(errors.form,'website_url')">Add a website link.</p>	                                         
                                         </CCol>
                                     </CRow>    
                                 </CCardBody>
@@ -218,7 +216,7 @@
 
 <script>
   import Chatbot from '@/components/Chatbot.vue';
-  import { chunk, cloneDeep, debounce, each, has, isEmpty, times } from 'lodash';
+  import { chunk, cloneDeep, debounce, each, has, isEmpty, remove, times, upperFirst } from 'lodash';
   import * as yup from 'yup';
   import { UniqueCharOTP } from 'unique-string-generator';
   export default {
@@ -261,16 +259,8 @@
                     delete this.errors.form[field];
                 })
                 .catch((err) => {
+                    console.log(err.message)
                     this.errors.form[err.path] = err.message;
-                });
-        }
-        this.validateLocal = (field) => {
-            this.localSchema.validateAt(field, this.local)
-                .then((value,key) => {
-                    delete this.errors.local[field];
-                })
-                .catch((err) => {
-                    this.errors.local[err.path] = err.message;
                 });
         }
         this.validatePrompt= (field) => {
@@ -288,7 +278,6 @@
                 .post(`/ai/app/generate/sitemap`,{ url })
                 .then( ({ data: { sitemap } }) => {
                     this.local.sitemap_links = cloneDeep(sitemap);
-                    this.sitemap_data.pages  = chunk(cloneDeep(sitemap),10).length;
                 })
                 .catch( ({ response: { data } }) => {
                     this.$toast.error(data.message)
@@ -296,18 +285,7 @@
                 .finally( () => {
                     this.loader.sitemap = false;
                 });
-        },1000)    
-        this.localSchema = yup.object().shape({
-            sitemap_links:  yup.array()
-                               .when(
-                                    'sitemap_url',
-                                    (sitemap_url,field) => !isEmpty(sitemap_url) ? 
-                                            field.min(1, '*The application requires at least one link from the sitemap.')
-                                                 .required("*Sitemap links is required")
-                                        :   field
-                                ),
-            sitemap_url:   yup.string().required("*Sitemap url is required"),                        
-        });        
+        },1000)            
         this.promptSchema = yup.object().shape({
             title:              yup.string()						
                                 .required("*Title is required"),
@@ -317,8 +295,6 @@
         this.formSchema = yup.object().shape({
             api_key:         yup.string()						
                                 .required("*Api Key is required"),                               
-            hash_key:        yup.string()						
-                                .required("*Hash Key is required"),
             content_type:   yup.string()						
                                 .required("*Content type is required"),                                
             files:           yup.array()
@@ -343,7 +319,7 @@
                                 ),
             welcome_message: yup.string()
                                 .required("*Welcome message is required"),
-            website:         yup.string()
+            website_url:     yup.string()
                                 .when(
                                     'content_type',
                                     (content_type,field) => content_type == 'website' ? 
@@ -369,6 +345,7 @@
                 sitemap_links: Array(),
                 sitemap_url:   String()
             },
+            models: Array(),
             sitemap_data:{
                 page:  1,
                 pages: 0,
@@ -400,6 +377,21 @@
             const { target: { value } } = event;
             this.form.content_type = value;
         },
+        getModels(api_key){
+            this.$api
+                .post(`/ai/app/models`,{
+                    apiKey: api_key
+                })
+                .then( ({ data: { models } }) => {
+                    this.models = cloneDeep(models).map( (model) => ({ label: model.id.split('-').map( value => upperFirst(value)).join(' '), value: model.id }));
+                })
+                .catch( (err) => {
+                    console.log(err);
+                })
+                .finally( () => {
+
+                })   
+        },
         uploadFiles(event){
             const { target: { files } } = event;
             Array.from(files).forEach( (file) => {
@@ -412,6 +404,19 @@
                     console.log('Error: ', error);
                 };
             });
+        },
+        updateSitemap(event){
+            const target = event.target;
+
+            if( target.checked ){
+                this.form.sitemap.push(target.value);
+            } else {
+                remove(
+                    this.form.sitemap,
+                    (val) => val == target.value 
+                )
+            }
+
         }
     },
     name: "CreateApp",
@@ -423,10 +428,6 @@
         loading:{
             default: Boolean(),
             type:    Boolean    
-        },
-        models:{
-            default: Array(),
-            type:    Array    
         },
         show:{
             default: Boolean(),
@@ -449,16 +450,8 @@
                 each(form,(value,key) => {
                     self.validateForm(key);
                 });
+                console.log(await this.formSchema.isValid(this.form))
                 this.disabled.createBtn = !(await this.formSchema.isValid(this.form));
-            },
-            deep: true,
-        },
-        local:{
-            async handler(data){
-                const self = this;
-                each(data,(value,key) => {
-                    self.validateLocal(key);
-                });
             },
             deep: true,
         },
@@ -470,7 +463,7 @@
         "data.content_type"(value){
             switch(value){
                 case "sitemap":
-                    this.form.website = String();
+                    this.form.website_url = String();
                     this.form.sitemap = Array();
                     this.form.files   = Array();
                 break;
@@ -488,17 +481,15 @@
                         sitemap_url:   String()                        
                     }    
                     this.form.sitemap = Array();
-                    this.form.website = String();
+                    this.form.website_url = String();
                 break;
             }
         },  
-        "data.api_key"(value){
+        "data.api_key": debounce(function(value){
             if( !isEmpty(value) ){
-                this.form.hash_key = UniqueCharOTP(70).toLowerCase();
-            } else {
-                this.form.hash_key = String();
+                this.getModels(value);
             }
-        },
+        },200),
         async show(value){
             if( value ){
                 const self = this;
@@ -507,10 +498,8 @@
                 });
                 each(this.prompt,(value,key) => {
                     self.validatePrompt(key);
-                });
-                each(this.local,(value,key) => {
-                    self.validateLocal(key);
                 });                
+
                 this.disabled.createBtn = !(await this.formSchema.isValid(this.form));                
             }
         },

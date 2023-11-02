@@ -17,8 +17,7 @@ export class AppModel {
     return paginate(query, this.appRepository, {
       sortableColumns:   ['name'],
       searchableColumns: ['user_id'],
-    
-    })
+    });
   }
 
   async findOneBy(data: any): Promise<AppEntity>{
@@ -37,7 +36,7 @@ export class AppModel {
     return await this.appRepository.update(appId,data);
   }
 
-  async remove(id: string): Promise<DeleteResult> {
+  async delete(id: string): Promise<DeleteResult> {
     return await this.appRepository.delete(id);
   }
 }

@@ -7,10 +7,7 @@ import { AuthService, OpenAIService } from 'src/services';
 import { CreateMessageValidation, QuestionValidation } from 'src/validation';
 import { MessageModel } from 'src/models/message.model';
 import { isEmpty, set } from 'lodash';
-import { Observable, ReadableStreamLike, Subject, from, map } from 'rxjs';
-import ChromaHelper from 'src/common/helpers/chroma.helper';
-import { OpenAIEmbeddings } from 'langchain/embeddings/openai';
-import { IterableReadableStream } from 'langchain/dist/util/stream';
+import { Observable, from, map } from 'rxjs';
 
 @Controller('chatbot')
 export class ChatbotController {
@@ -58,7 +55,6 @@ export class ChatbotController {
 
         } catch(err){
             console.log(err);
-
             return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({});
 
         }  

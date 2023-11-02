@@ -3,9 +3,9 @@ import vue from '@vitejs/plugin-vue'
 import { fileURLToPath, URL } from "url";
 import legacy from '@vitejs/plugin-legacy'
 import requireTransform from 'vite-plugin-require-transform';
-
 // https://vitejs.dev/config/
 export default defineConfig({
+
   plugins: [
     legacy({
       targets: ['defaults', 'not IE 11'],
@@ -18,4 +18,4 @@ export default defineConfig({
       "@": fileURLToPath(new URL("./src", import.meta.url)),
     },
   },
-})
+});

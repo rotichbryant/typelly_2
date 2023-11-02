@@ -1,7 +1,7 @@
 import { Body, Controller, DefaultValuePipe, Delete, Get, HttpStatus,ParseIntPipe,  Post, Put, Req, Res, Param, Query, UseGuards, Sse } from '@nestjs/common';
 import { AuthGuard } from '../../guards';
 import { Request, Response } from 'express';
-import { CreateAppValidation, CreatePromptValidation, SitemapValidation, UpdateAppValidation } from 'src/validation';
+import { CreateAppValidation, CreatePromptValidation, GetModelsValidation, SitemapValidation, UpdateAppValidation } from 'src/validation';
 import { AppModel, FileModel, PromptModel, SiteMapModel, UserModel } from 'src/models';
 import { ConfigService } from '@nestjs/config';
 import { cloneDeep,get, isEmpty, isNull, omit, set } from 'lodash';
@@ -18,6 +18,8 @@ import { JSONLoader, JSONLinesLoader } from "langchain/document_loaders/fs/json"
 import { TextLoader } from "langchain/document_loaders/fs/text";
 import { CSVLoader } from "langchain/document_loaders/fs/csv";
 import { PDFLoader } from "langchain/document_loaders/fs/pdf";
+import { PlaywrightWebBaseLoader, Page, Browser } from "langchain/document_loaders/web/playwright";
+import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
 
 @Controller('ai/app')
 export class AiAppController {
@@ -41,16 +43,26 @@ export class AiAppController {
         @Paginate() query: PaginateQuery,
     ) {
         try{
-            const { id } = get(req,'user'),path = require('path');
+            const { id } = get(req,'user');
             query.search = id;
-
-            const apps             = await this.aiAppModel.get(query);
-            const { data: models } = await this.openaiService.models();
-
-            res.status(HttpStatus.OK).json({apps,models});
-            
+            const apps   = await this.aiAppModel.get(query);
+            res.status(HttpStatus.OK).json({apps});
         } catch (e) {
-            console.log(e);
+            res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({});
+        }
+    }
+
+    @UseGuards(AuthGuard)
+    @Post('models')
+    async getModels( 
+        @Res() res: Response,
+        @Body() getModels: GetModelsValidation, 
+    ) {
+        try{
+            let { data: models } = await this.openaiService.models({api_key:getModels.apiKey});
+            // models               = models.filter( model => model.owned_by == 'openai' );
+            res.status(HttpStatus.OK).json({models});        
+        } catch (e) {
             res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({});
         }
     }
@@ -71,9 +83,12 @@ export class AiAppController {
                             await this.promptModel.save(prompt);
                         }),
                         createApp.sitemap.map( async(link: any): Promise<any> =>{
-                            link = set(link,'app_id',app.id);
-                            this.siteMapModel.save(link);
+                            this.siteMapModel.save({
+                                name: link,
+                                app_id: app.id
+                            });
                         }),
+
                         createApp.files.map( async(file: string): Promise<any> =>{
                             let [ type_1, type_2 ] = getImageMime(file).split('/');
                             let filename = `FILE_${new Date().getTime()}.${type_2}`;
@@ -92,38 +107,117 @@ export class AiAppController {
                     ])
                     .then( async(): Promise<any> =>  {
                         try{
-                            const loader = new DirectoryLoader(
-                                `${process.cwd()}${path.sep}src${path.sep}storage${path.sep}public${path.sep}${app.id}`,
-                                {
-                                    ".json": (path) => new JSONLoader(path, "/texts"),
-                                    ".jsonl": (path) => new JSONLinesLoader(path, "/html"),
-                                    ".txt": (path) => new TextLoader(path),
-                                    ".csv": (path) => new CSVLoader(path, "text"),
-                                    ".pdf": (path) => new PDFLoader(path,{
-                                        // you may need to add `.then(m => m.default)` to the end of the import
-                                        pdfjs: () => import("pdfjs-dist/legacy/build/pdf.js")
-                                    }),
-                                }
-                            );       
-                            // Create vector store and index the docs
-                            const docs = await loader.load();
-                            ChromaHelper.fromDocuments(
-                                docs,
-                                new OpenAIEmbeddings(), 
-                                {
-                                    collectionName: app.id,
-                                    url: this.configService.get('VECTOR_DB_URL'), // Optional, will default to this value
-                                    collectionMetadata: {
-                                        "hnsw:space": "cosine",
-                                    }, // Optional, can be used to specify the distance method of the embedding space https://docs.trychroma.com/usage-guide#changing-the-distance-function
-                                }
-                            );  
+                            await app.sitemaps;
+                            await app.files;
 
-                            res.status(HttpStatus.OK).json({app});
+                            if( !isEmpty(app.sitemap) ){
+                                let docs = Array();       
+
+                                const vectorStore = new ChromaHelper(
+                                    new OpenAIEmbeddings({
+                                        openAIApiKey: app.api_key
+                                    }),
+                                    {
+                                        collectionName: app.id,
+                                        url: this.configService.get('VECTOR_DB_URL'), // Optional, will default to this value
+                                        collectionMetadata: {
+                                            "hnsw:space": "cosine",
+                                        },
+                                    }
+                                );
+
+                                const splitter = new RecursiveCharacterTextSplitter({
+                                    chunkSize: 4000,
+                                    chunkOverlap: 1,
+                                    separators: ["|", "##", ">", "-"],
+                                });
+
+                                Promise.all(
+                                    app.sitemap.map(
+                                        async(link) => {
+                                            const loader = new PlaywrightWebBaseLoader(link);
+                                            const docs   = await loader.load();
+                                            docs.push(docs[0])
+                                            return docs[0];
+                                        }
+                                    )
+                                ).then( async(documents) => {
+                                    const docOutput = await splitter.splitDocuments(documents);                                                            
+                                    vectorStore.addDocuments(docOutput);
+                                    res.status(HttpStatus.OK).json({app});
+                                });
+
+                            }
+
+                            if( !isEmpty(app.website_url) ){
+
+                                const loader = new PlaywrightWebBaseLoader(app.website_url);
+                                const docs   = await loader.load();
+                                
+                                const splitter = new RecursiveCharacterTextSplitter({
+                                    chunkSize: 4000,
+                                    chunkOverlap: 1,
+                                    separators: ["|", "##", ">", "-"],
+                                });
+                                
+                                const docOutput = await splitter.splitDocuments([docs[0]]);                            
+
+                                const vectorStore = new ChromaHelper(
+                                    new OpenAIEmbeddings({
+                                        openAIApiKey: app.api_key
+                                    }),
+                                    {
+                                        collectionName: app.id,
+                                        url: this.configService.get('VECTOR_DB_URL'), // Optional, will default to this value
+                                        collectionMetadata: {
+                                            "hnsw:space": "cosine",
+                                        },
+                                    }
+                                );
+
+                                vectorStore.addDocuments(docOutput);
+                                res.status(HttpStatus.BAD_GATEWAY).json({app});
+                            }
+                            
+                            if( !isEmpty(app.files) ){
+
+                                const loader = new DirectoryLoader(
+                                    `${process.cwd()}${path.sep}src${path.sep}storage${path.sep}public${path.sep}${app.id}`,
+                                    {
+                                        ".json": (path) => new JSONLoader(path, "/texts"),
+                                        ".jsonl": (path) => new JSONLinesLoader(path, "/html"),
+                                        ".txt": (path) => new TextLoader(path),
+                                        ".csv": (path) => new CSVLoader(path, "text"),
+                                        ".pdf": (path) => new PDFLoader(path,{
+                                            // you may need to add `.then(m => m.default)` to the end of the import
+                                            pdfjs: () => import("pdfjs-dist/legacy/build/pdf.js")
+                                        }),
+                                    }
+                                );  
+
+                                // Create vector store and index the docs
+                                const docs = await loader.load();
+
+                                ChromaHelper.fromDocuments(
+                                    docs,
+                                    new OpenAIEmbeddings(), 
+                                    {
+                                        collectionName: app.id,
+                                        url: this.configService.get('VECTOR_DB_URL'), // Optional, will default to this value
+                                        collectionMetadata: {
+                                            "hnsw:space": "cosine",
+                                        }, // Optional, can be used to specify the distance method of the embedding space https://docs.trychroma.com/usage-guide#changing-the-distance-function
+                                    }
+                                ); 
+                                res.status(HttpStatus.BAD_GATEWAY).json({app});
+                            } 
+
+
                         } catch(err) {
-                            console.log(err);   
+                            await this.aiAppModel.delete(app.id);
+                            res.status(HttpStatus.BAD_REQUEST).json({ message: err.error.message}); 
                         }                                              
-                    })
+                    });
                 });
         } catch(e){
             res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({});
@@ -146,41 +240,19 @@ export class AiAppController {
     @Post('generate/sitemap')
     async sitemap(@Body() generate: SitemapValidation, @Res() res: Response) {
         try {
+            const Crawler   = require("simplecrawler");
+            const siteCrawl = new Crawler(generate.url)
 
-            const smta = require('sitemap-to-array');
-            let sitemap      = Array();
+            siteCrawl.start(); 
+                
+            siteCrawl.on("discoverycomplete",function(){
+                const [ request, discovery ] = arguments;
+                const sitemap = discovery.filter( value => value.includes(generate.url) )
+                                         .filter( value => !value.includes('.css') && !value.includes('.jpg') && !value.includes('.JPG') && !value.includes('.JPEG') && !value.includes('.js') && !value.includes('.png') )
+                res.status(HttpStatus.OK).json({ sitemap });
+                return;
 
-            this.httpService
-                .axiosRef({
-                    url: `${generate.url}/sitemap.xml`,
-                    method: 'GET',
-                    responseType: 'arraybuffer',
-                })
-                .then( ({ data }) =>{
-                    smta(
-                        data, 
-                        stream => {
-                            // console.log(stream);
-                            stream.on('error', error => {
-                                throw new ExceptionsHandler(error);
-                            })
-                            stream.on('data', data => {
-                                const { loc } = JSON.parse(data.toString());
-                                sitemap.push(loc);
-                            })
-                            stream.on('end', data => {
-                                res.status(HttpStatus.OK).json({ sitemap });                            
-                            })
-                        }
-                    );
-                }).catch( (err) => {
-                    switch(err.response.status){
-                        case 404:
-                        return res.status(HttpStatus.NOT_FOUND).json({message:'File not found.'});    
-                        default:
-                        return res.status(HttpStatus.NO_CONTENT).json({message:'Unknown'});                    
-                    }
-                })
+            });
 
         } catch(e){
             res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({message:'Something went wrong.'});
@@ -217,8 +289,9 @@ export class AiAppController {
 
     @UseGuards(AuthGuard)
     @Delete(':appId/delete')
-    async delete(@Req() req: Request,  @Res() res: Response) {
-        res.status(HttpStatus.OK).json(req);
+    async delete(@Param('appId') appId: string, @Req() req: Request,  @Res() res: Response) {
+        await this.aiAppModel.delete(appId);
+        res.status(HttpStatus.OK).json();
     } 
 
 }

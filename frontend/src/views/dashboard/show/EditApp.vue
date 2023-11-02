@@ -124,14 +124,11 @@
                                                 <p class="text-danger mb-0" v-show="$has(errors.local,'sitemap_url')">{{errors.local.sitemap_url}}</p>								
                                                 <p class="mb-0" v-show="!$has(errors.local,'sitemap_url')">You can select multiple files</p>
                                             </CCol>
-                                            <CCol class="col-12 mt-4" v-show="!$isEmpty(local.sitemap_links)">
+                                            <CCol class="col-12 mt-4 overflo" v-show="!$isEmpty(local.sitemap_links)">
                                                 <h6>Sitemap links</h6>
-                                                <CButtonGroup vertical role="group" aria-label="Vertical button group">
-                                                    <template v-for="(link,key) in s_links[sitemap_data.page - 1]" :key="key">
-                                                        <CFormCheck type="checkbox" :button="{ color: 'primary', variant: 'outline' }" name="links" :id="`link_${(sitemap_data.page-1)}_${key}`" autocomplete="off" :label="link"/>
-                                                    </template>              
-                                                </CButtonGroup>
-                                                <pagination v-model="local.page" :records="local.sitemap_links.length" :per-page="10" @paginate="console.log($event)"/>     
+                                                <template v-for="(link,key) in local.sitemap_links" :key="key">
+                                                    <CFormCheck id="defaultCheck1" :value="link" :label="link" @change="updateSitemap"/>
+                                                </template>                                              
                                                 <p class="text-danger mb-0" v-show="$has(errors.form,'sitemap')">{{errors.form.sitemap}}</p>								
                                                 <p class="mb-0" v-show="!$has(errors.form,'sitemap')">You can select multiple site links</p>	                                                                                                                                                                       
                                             </CCol>                                                 
@@ -139,8 +136,8 @@
                                         <CRow v-if="form.content_type  == 'website'">
                                             <CCol>
                                                 <CFormInput label="Website Url" placeholder="eg. http://example.com" aria-label="Sizing example input" aria-describedby="inputGroup-sizing-default"/>
-                                                <p class="text-danger mb-0" v-show="$has(errors.form,'website')">{{errors.form.website}}</p>								
-                                                <p class="mb-0" v-show="!$has(errors.form,'website')">Add a website link.</p>	                                         
+                                                <p class="text-danger mb-0" v-show="$has(errors.form,'website_url')">{{errors.form.website_url}}</p>								
+                                                <p class="mb-0" v-show="!$has(errors.form,'website_url')">Add a website link.</p>	                                         
                                             </CCol>
                                         </CRow>    
                                     </CCardBody>
@@ -258,15 +255,6 @@ export default {
                     this.errors.form[err.path] = err.message;
                 });
         }
-        this.validateLocal = (field) => {
-            this.localSchema.validateAt(field, this.local)
-                .then((value,key) => {
-                    delete this.errors.local[field];
-                })
-                .catch((err) => {
-                    this.errors.local[err.path] = err.message;
-                });
-        }
         this.validatePrompt= (field) => {
             this.promptSchema.validateAt(field, this.prompt)
                 .then((value,key) => {
@@ -282,7 +270,6 @@ export default {
                 .post(`/ai/app/generate/sitemap`,{ url })
                 .then( ({ data: { sitemap } }) => {
                     this.local.sitemap_links = cloneDeep(sitemap);
-                    this.sitemap_data.pages  = chunk(cloneDeep(sitemap),10).length;
                 })
                 .catch( ({ response: { data } }) => {
                     this.$toast.error(data.message)
@@ -290,18 +277,7 @@ export default {
                 .finally( () => {
                     this.loader.sitemap = false;
                 });
-        },1000)    
-        this.localSchema = yup.object().shape({
-            sitemap_links:  yup.array()
-                               .when(
-                                    'sitemap_url',
-                                    (sitemap_url,field) => !isEmpty(sitemap_url) ? 
-                                            field.min(1, '*The application requires at least one link from the sitemap.')
-                                                 .required("*Sitemap links is required")
-                                        :   field
-                                ),
-            sitemap_url:   yup.string().required("*Sitemap url is required"),                        
-        });        
+        },1000)             
         this.promptSchema = yup.object().shape({
             title:              yup.string()						
                                 .required("*Title is required"),
@@ -337,7 +313,7 @@ export default {
                                 ),
             welcome_message: yup.string()
                                 .required("*Welcome message is required"),
-            website:         yup.string()
+            websit_url:      yup.string()
                                 .when(
                                     'content_type',
                                     (content_type,field) => content_type == 'website' ? 
@@ -361,7 +337,6 @@ export default {
             },
             local:{
                 sitemap_links: Array(),
-                sitemap_url:   String()
             },
             live: Boolean(),
             sitemap_data:{
@@ -461,14 +436,13 @@ export default {
         "data.content_type"(value){
             switch(value){
                 case "sitemap":
-                    this.form.website = String();
+                    this.form.website_url = String();
                     this.form.sitemap = Array();
                     this.form.files   = Array();
                 break;
                 case "website":
                     this.local = {
-                        sitemap_links: Array(),
-                        sitemap_url:   String()                        
+                        sitemap_links: Array(),                   
                     }        
                     this.form.sitemap = Array();
                     this.form.files   = Array();
@@ -479,7 +453,7 @@ export default {
                         sitemap_url:   String()                        
                     }    
                     this.form.sitemap = Array();
-                    this.form.website = String();
+                    this.form.website_url = String();
                 break;
             }
         },  
@@ -498,10 +472,7 @@ export default {
                 });
                 each(this.prompt,(value,key) => {
                     self.validatePrompt(key);
-                });
-                each(this.local,(value,key) => {
-                    self.validateLocal(key);
-                });                
+                });             
                 this.disabled.createBtn = !(await this.formSchema.isValid(this.form));                
             }
         },   

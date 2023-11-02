@@ -24,6 +24,7 @@ export class OpenAIService{
 
     async search({ content, chatbot: { app }}){
         try {
+            
             const model = new OpenAI({
                 // streaming: true,
                 modelName: app.model, 
@@ -47,13 +48,14 @@ export class OpenAIService{
             return await chain.stream({
                 query: content
             });      
+
         } catch (err) {
             throw err;
         }
     }
 
-    async models(){
-        const openai = new OpenAIApi({apiKey: this.configService.get('OPENAI_API_KEY') });
+    async models({api_key}){
+        const openai = new OpenAIApi({apiKey: api_key });
         return await openai.models.list();
     }
 

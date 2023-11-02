@@ -3,6 +3,7 @@ import { PromptEntity } from './prompt.entity';
 import { UserEntity } from './user.entity';
 import { ChatBotEntity } from './chatbot.entity';
 import { FileEntity } from './file.entity';
+import { SiteMapEntity } from './sitemap.entity';
 
 
 export enum ContentType {
@@ -55,6 +56,9 @@ export class AppEntity {
 
   @OneToMany(() => FileEntity, (file) => file.app, { eager: false, lazy: true, cascade: true})
   files: FileEntity[];
+
+  @OneToMany(() => SiteMapEntity, (sitemap) => sitemap.app, { eager: false, lazy: true, cascade: true})
+  sitemaps: SiteMapEntity[];
 
   @ManyToOne(() => UserEntity, (user) => user.apps,{ eager: false,  onDelete: 'CASCADE', onUpdate: 'CASCADE'})
   @JoinColumn({
