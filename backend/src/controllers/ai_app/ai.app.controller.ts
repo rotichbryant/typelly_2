@@ -242,17 +242,20 @@ export class AiAppController {
         try {
             const Crawler   = require("simplecrawler");
             const siteCrawl = new Crawler(generate.url)
+            let sitemap     = Array();
 
-            siteCrawl.start(); 
+            siteCrawl.downloadUnsupported = false;
+            siteCrawl.decodeResponses = true;
                 
             siteCrawl.on("discoverycomplete",function(){
                 const [ request, discovery ] = arguments;
-                const sitemap = discovery.filter( value => value.includes(generate.url) )
-                                         .filter( value => !value.includes('.css') && !value.includes('.jpg') && !value.includes('.JPG') && !value.includes('.JPEG') && !value.includes('.js') && !value.includes('.png') )
+                sitemap = discovery.filter( value => value.includes(generate.url) )
+                                   .filter( value => !value.includes('.css') && !value.includes('.jpg') && !value.includes('.JPG') && !value.includes('.JPEG') && !value.includes('.js') && !value.includes('.png') && !value.includes('.php') )
+                siteCrawl.stop();
                 res.status(HttpStatus.OK).json({ sitemap });
-                return;
-
             });
+
+            siteCrawl.start(); 
 
         } catch(e){
             res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({message:'Something went wrong.'});
