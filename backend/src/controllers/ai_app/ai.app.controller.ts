@@ -214,6 +214,7 @@ export class AiAppController {
 
 
                         } catch(err) {
+                            console.log(err);
                             await this.aiAppModel.delete(app.id);
                             if( has(err.error,'message') ){
                                 res.status(HttpStatus.BAD_REQUEST).json({ message: err.error.message}); 
