@@ -32,7 +32,9 @@ export class OpenAIService{
                 openAIApiKey: app.api_key, // In Node.js defaults to process.env.OPENAI_API_KEY
             }),
             vectorStore   = await ChromaHelper.fromExistingCollection(
-                new OpenAIEmbeddings(),
+                new OpenAIEmbeddings({
+                    openAIApiKey: app.api_key                
+                }),
                 { 
                     collectionName: app.id,
                     url: this.configService.get('VECTOR_DB_URL'), 
