@@ -218,7 +218,7 @@ export class AiAppController {
                             if( has(err.error,'message') ){
                                 res.status(HttpStatus.BAD_REQUEST).json({ message: err.error.message}); 
                             }
-                            res.status(err.error.status).json(err.error); 
+                            res.status(HttpStatus.BAD_REQUEST).json(err); 
                         }                                              
                     });
                 });
