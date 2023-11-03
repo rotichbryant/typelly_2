@@ -176,7 +176,7 @@ export class AiAppController {
                                 );
 
                                 vectorStore.addDocuments(docOutput);
-                                res.status(HttpStatus.BAD_GATEWAY).json({app});
+                                res.status(HttpStatus.OK).json({app});
                             }
                             
                             if( !isEmpty(app.files) ){
