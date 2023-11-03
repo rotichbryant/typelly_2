@@ -4,7 +4,7 @@ import { Request, Response } from 'express';
 import { CreateAppValidation, CreatePromptValidation, GetModelsValidation, SitemapValidation, UpdateAppValidation } from 'src/validation';
 import { AppModel, FileModel, PromptModel, SiteMapModel, UserModel } from 'src/models';
 import { ConfigService } from '@nestjs/config';
-import { cloneDeep,get, isEmpty, isNull, omit, set } from 'lodash';
+import { cloneDeep,get, isEmpty, has, omit, set } from 'lodash';
 import { Paginate, PaginateQuery } from '@ai-em/nestjs-paginate'
 import { OpenAIService } from 'src/services';
 import { from, interval, map, Observable } from 'rxjs';
@@ -215,7 +215,10 @@ export class AiAppController {
 
                         } catch(err) {
                             await this.aiAppModel.delete(app.id);
-                            res.status(HttpStatus.BAD_REQUEST).json({ message: err.error.message}); 
+                            if( has(err.error,'message') ){
+                                res.status(HttpStatus.BAD_REQUEST).json({ message: err.error.message}); 
+                            }
+                            res.status(err.error.status).json(err.error); 
                         }                                              
                     });
                 });
