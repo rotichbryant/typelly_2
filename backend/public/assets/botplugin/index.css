@@ -1,10 +1,47 @@
-// Here you can add other styles
-body{
-    background:#eee;
+@import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css');
+
+#bot {
+    position: relative;
+    z-index: 1000 !important;
 }
 
-.blur{
-    backdrop-filter: blur(10px);
+.chatbot__button {
+    position: fixed;
+    bottom: 35px;
+    right: 40px;
+    width: 50px;
+    height: 50px;
+    display: flex;
+    z-index: 100000 !important;
+    justify-content: center;
+    align-items: center;
+    background: #227ebb;
+    color: #f3f7f8;
+    border: none;
+    border-radius: 50%;
+    outline: none;
+    cursor: pointer;
+}
+
+.chatbot {
+    z-index: 10000 !important;
+    position: fixed;
+    bottom: 100px;
+    right: 40px;
+    width: 30rem;
+    border-radius: 15px;
+    box-shadow: 0 0 128px 0 rgba(0, 0, 0, 0.1) 0 32px 64px -48px rgba(0, 0, 0, 0.5);
+    /* transform: scale(0.5); */
+    transition: transform 0.3s ease;
+    /* overflow: scroll; */
+    opacity: 1;
+    height: 100vh * 0.4;
+    min-width: 0;
+    word-wrap: break-word;
+    background-color: #fff;
+    background-clip: border-box;
+    border: 1px solid rgba(0, 0, 0, .125);
+    border-radius: .25rem
 }
 
 .box {
@@ -12,7 +49,6 @@ body{
     border-radius: 3px;
     background: #ffffff;
     border-top: 3px solid #d2d6de;
-    margin-bottom: 20px;
     width: 100%;
     box-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
 }
@@ -284,9 +320,24 @@ body{
     -o-transform: translate(0,  0);
     transform: translate(0,  0);
     padding: 10px;
-    height: 250px;
+    height: 50vh;
     overflow: auto;
 }
+
+.direct-chat-init {
+    -webkit-transform: translate(0,  0);
+    -ms-transform: translate(0,  0);
+    -o-transform: translate(0,  0);
+    transform: translate(0,  0);
+    padding: 10px;
+    height: 300px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: auto;
+    color: #00c0ef !important;
+}
+
 .direct-chat-msg, .direct-chat-text {
     display: block;
 }
@@ -349,8 +400,14 @@ body{
     float: left;
     width: 40px;
     height: 40px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border: 1px solid #d2d6de;
 }
 .right .direct-chat-img {
+    border: 1px solid #3c8dbc;
+    color: #3c8dbc;
     float: right;
 }
 .direct-chat-info {
@@ -464,9 +521,61 @@ body{
 .direct-chat-success .right>.direct-chat-text:after, .direct-chat-success .right>.direct-chat-text:before {
     border-left-color: #00a65a;
 }
-                                    
+          
+.input-field {
+    display: flex;
+    flex-wrap: nowrap;
+}
+
+.input-field > .chatbtn {
+    background-color: hsl(202, 52%, 49%) !important;
+    border-color: #0d6efd;
+    display: inline-block;
+    font-weight: 400;
+    line-height: 1.5;
+    color: #fff;
+    text-align: center;
+    text-decoration: none;
+    vertical-align: middle;
+    cursor: pointer;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    background-color: transparent;
+    border: 1px solid transparent;
+    padding: .375rem .75rem;
+    font-size: 1rem;
+    border-radius: 0 !important;
+    border-top-right-radius: .25rem !important;
+    border-bottom-right-radius: .25rem !important;
+    -webkit-transition: color .15s ease-in-out, background-color .15s ease-in-out, border-color .15s ease-in-out, box-shadow .15s ease-in-out;
+    transition: color .15s ease-in-out, background-color .15s ease-in-out, border-color .15s ease-in-out, box-shadow .15s ease-in-out;
+}
+
+.input-field > .form-control {
+    display: block;
+    width: 100%;
+    padding: .375rem .75rem;
+    font-size: 1rem;
+    font-weight: 400;
+    line-height: 1.5;
+    color: #212529;
+    background-color: #fff;
+    background-clip: padding-box;
+    border: 1px solid #3c8dbc;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    border-radius: 0 !important;
+    border-top-left-radius: .25rem !important;
+    border-bottom-left-radius: .25rem !important;
+    -webkit-transition: border-color .15s ease-in-out, box-shadow .15s ease-in-out;
+    transition: border-color .15s ease-in-out, box-shadow .15s ease-in-out;
+}
+
 .loading {
-    padding: 0.3em;
+    padding: 0.5em;
 }
 
 .typing-loader{

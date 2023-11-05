@@ -210,21 +210,23 @@
 
                 es.addEventListener("message", ({data}) => {
                     if( !isEmpty(data) ){
+                        const  { result, sourceDocuments } = JSON.parse(data);
                         this.loading.question = false;
                         this.question         = String();
-                        this.registerResponse();
+                        this.registerResponse(result);
                         es.close();
 
                         if( this.messages[(this.messages.length - 1)].loading ){
                             this.messages[(this.messages.length - 1)].loading = false;
                         }
-                        this.messages[(this.messages.length - 1)].content = data;
+                        this.messages[(this.messages.length - 1)].content = result;
                     }
                 }); 
             },
-            registerResponse(){
+            registerResponse(data){
                 const { botInfo:{ id } } = this;
-                const content            = this.messages[(this.messages.length - 1)]
+                let content            = this.messages[(this.messages.length - 1)]
+                content.content        = data;
                 this.$api
                     .post(`chatbot/${id}/update`,content)
                     .then( ({ data: { message } }) => {

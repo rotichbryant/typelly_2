@@ -97,7 +97,7 @@ export class ChatbotController {
 
             ).pipe(
                 map( (data:any) => {
-                    return { data: data.text  } as MessageEvent; 
+                    return { data: JSON.stringify(data)  } as MessageEvent; 
                 })
             );
 

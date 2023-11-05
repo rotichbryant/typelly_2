@@ -1,6 +1,6 @@
 import { Module, MiddlewareConsumer, NestModule } from '@nestjs/common';
 import { ApiMiddleware, RedirectIfAuthMiddleware } from './middlewares';
-import { AiAppController, AuthController, ChatbotController } from './controllers';
+import { AiAppController, AuthController, BotController, ChatbotController } from './controllers';
 import { AppService } from './app.service';
 import { JwtStrategy, LocalStrategy } from './guards';
 import { TypeOrmModule } from '@nestjs/typeorm';
@@ -70,18 +70,16 @@ import { HttpModule } from '@nestjs/axios';
     SiteMapModule,
     UserModule 
   ],
-  controllers: [AuthController,AiAppController, ChatbotController],
+  controllers: [AuthController,AiAppController, BotController, ChatbotController],
   providers: [AppService,AuthService,OpenAIService,JwtStrategy,LocalStrategy],
 })
 
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
     consumer.apply(ApiMiddleware)
-            .forRoutes("*");
+            .forRoutes("/api/*");
     consumer.apply(RedirectIfAuthMiddleware)
-            .exclude(
-              'auth/logout'
-            )
+            .exclude('/api/auth/logout')
             .forRoutes(AuthController)            
   }
 }
