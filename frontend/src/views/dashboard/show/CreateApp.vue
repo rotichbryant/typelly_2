@@ -450,7 +450,6 @@
                 each(form,(value,key) => {
                     self.validateForm(key);
                 });
-                console.log(await this.formSchema.isValid(this.form))
                 this.disabled.createBtn = !(await this.formSchema.isValid(this.form));
             },
             deep: true,
